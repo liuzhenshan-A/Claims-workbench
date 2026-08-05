@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>理赔工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
+.top-header{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:18px 32px;display:flex;justify-content:space-between;align-items:center}
+.top-title{font-size:20px;font-weight:600}
+.top-title::before{content:'🛡️';margin-right:8px}
+.user-info{font-size:14px;opacity:.9}
+.container{max-width:1440px;margin:0 auto;padding:24px}
+
+/* 筛选栏 */
+.filter-bar{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;flex-wrap:wrap;align-items:center;gap:20px;margin-bottom:24px}
+.filter-item{display:flex;align-items:center;gap:8px}
+.filter-label{font-size:14px;color:#666;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.filter-label .help-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e0e0e0;color:#999;font-size:10px;cursor:help;position:relative}
+.filter-label .help-icon:hover{background:#667eea;color:#fff}
+.filter-label .help-icon:hover::after{content:attr(data-tip);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:6px;font-size:12px;white-space:pre-line;z-index:300;min-width:200px;max-width:280px;line-height:1.5}
+.filter-select,.filter-input{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff;transition:border-color .2s}
+.filter-select:focus,.filter-input:focus{border-color:#667eea}
+.date-range{display:flex;align-items:center;gap:6px}
+.date-range .filter-input{min-width:140px}
+.filter-actions{margin-left:auto;display:flex;gap:10px}
+.btn{padding:8px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{box-shadow:0 4px 12px rgba(102,126,234,.4);transform:translateY(-1px)}
+.btn-default{background:#fff;color:#666;border:1px solid #ddd}
+.btn-default:hover{background:#f5f5f5}
+
+/* 多选 */
+.multi-select{position:relative;min-width:180px}
+.multi-select-trigger{padding:8px 36px 8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;min-width:180px;position:relative;transition:border-color .2s}
+.multi-select-trigger:hover,.multi-select-trigger.active{border-color:#667eea}
+.multi-select-trigger::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#999;font-size:12px}
+.multi-select-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:240px;overflow-y:auto;display:none;z-index:100;margin-top:4px}
+.multi-select-dropdown.show{display:block}
+.multi-select-option{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;position:relative}
+.multi-select-option:hover{background:#f5f7fa}
+.multi-select-option.selected{background:#f0f5ff;color:#667eea;font-weight:500}
+.multi-select-option.selected::after{content:'✓';position:absolute;right:12px;color:#667eea;font-weight:bold}
+.multi-select-option input{cursor:pointer}
+.multi-select-footer{padding:8px 12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:13px}
+.multi-select-footer a{color:#667eea;cursor:pointer;text-decoration:none}
+.multi-select-footer a:hover{text-decoration:underline}
+
+/* 标题行 */
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.section-title{font-size:18px;font-weight:600;color:#333;display:flex;align-items:center;gap:8px}
+.section-title .help-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e0e0e0;color:#999;font-size:10px;cursor:help;position:relative}
+.section-title .help-icon:hover{background:#667eea;color:#fff}
+.section-title .help-icon:hover::after{content:attr(data-tip);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:6px;font-size:12px;white-space:pre-line;z-index:300;min-width:200px;max-width:320px;line-height:1.5}
+.section-subtitle{font-size:13px;color:#999}
+
+/* KPI */
+.kpi-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-bottom:32px}
+.kpi-card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06);position:relative;overflow:hidden;transition:transform .2s}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.1)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.kpi-primary::before{background:linear-gradient(90deg,#667eea,#764ba2)}
+.kpi-success::before{background:linear-gradient(90deg,#52c41a,#73d13d)}
+.kpi-warning::before{background:linear-gradient(90deg,#faad14,#ffc53d)}
+.kpi-danger::before{background:linear-gradient(90deg,#ff4d4f,#ff7875)}
+.kpi-icon{font-size:28px;margin-bottom:10px}
+.kpi-label{font-size:13px;color:#666;margin-bottom:10px;display:flex;align-items:center;gap:4px}
+.kpi-label .help-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e0e0e0;color:#999;font-size:10px;cursor:help;position:relative}
+.kpi-label .help-icon:hover{background:#667eea;color:#fff}
+.kpi-label .help-icon:hover::after{content:attr(data-tip);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 12px;border-radius:6px;font-size:12px;white-space:pre-line;z-index:300;min-width:200px;max-width:320px;line-height:1.5}
+.kpi-value{font-size:28px;font-weight:600;color:#333;margin-bottom:14px}
+.kpi-unit{font-size:14px;color:#999;font-weight:normal}
+.kpi-compare{display:flex;justify-content:space-between;font-size:12px;color:#999;padding-top:12px;border-top:1px solid #f0f0f0}
+.compare-up{color:#52c41a}
+.compare-down{color:#ff4d4f}
+
+/* 预警 */
+.alerts-section{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.alert-cards{display:grid;grid-template-columns:1fr;gap:16px}
+.alert-card{background:#fff;border-radius:12px;padding:20px 24px;border-left:4px solid #e8eaf0;transition:all .2s;display:grid;grid-template-columns:200px 1fr auto;gap:24px;align-items:center}
+.alert-card:hover{background:#fafbff}
+.alert-card.danger{border-left-color:#ff4d4f;background:linear-gradient(90deg,#fff1f0 0,#fff)}
+.alert-card.warning{border-left-color:#faad14;background:linear-gradient(90deg,#fffbe6 0,#fff)}
+.alert-left{border-right:1px dashed #eee;padding-right:20px}
+.alert-title{font-size:18px;font-weight:600;color:#333;margin-bottom:6px}
+.alert-title::before{content:'🔵';margin-right:6px}
+.alert-leader{font-size:13px;color:#666}
+.alert-leader::before{content:'👤';margin-right:4px}
+.alert-middle{display:flex;gap:48px}
+.alert-row{display:flex;flex-direction:column;gap:6px}
+.alert-row-label{font-size:13px;color:#999}
+.alert-row-value{font-size:20px;font-weight:600;color:#333;display:flex;align-items:center;gap:8px}
+.warn-color{color:#faad14}
+.danger-color{color:#ff4d4f}
+.alert-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:normal}
+.alert-badge.warn{background:#fffbe6;color:#faad14;border:1px solid #ffe58f}
+.alert-badge.danger{background:#fff1f0;color:#ff4d4f;border:1px solid #ffccc7}
+.alert-btn{text-align:right}
+.btn-sm{padding:10px 18px;font-size:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .2s}
+.btn-sm:hover{box-shadow:0 4px 12px rgba(102,126,234,.4);transform:translateY(-1px)}
+
+.empty-state{text-align:center;padding:60px 20px;color:#999}
+.hidden{display:none !important}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:1000}
+
+@media(max-width:768px){
+  .container{padding:16px}
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .filter-actions{margin-left:0}
+  .multi-select{min-width:100%}
+  .multi-select-trigger{min-width:100%}
+  .kpi-value{font-size:22px}
+  .alert-card{grid-template-columns:1fr;gap:16px}
+  .alert-middle{flex-direction:column;gap:12px}
+  .alert-btn{text-align:left}
+}
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <div class="top-title">理赔工作台</div>
+  <div class="user-info">管理员</div>
+</div>
+
+<div class="container">
+
+  <!-- 筛选 -->
+  <div class="filter-bar">
+    <div class="filter-item">
+      <span class="filter-label">理赔人员：<span class="help-icon" data-tip="理赔人员数据获取：管理后台-理赔管理-权限管理-通过待审核的人员关联的客服，标记数据查询范围。例如我选择理赔人员是李雪，权限配置中李雪关联的客服是谁就查谁的数据。当前查询条件需要做成权限配置，默认代入当前登录人的信息，如果下拉框中没有当前登录人，则不匹配，不展示任何数据。">?</span></span>
+      <div class="multi-select" id="personMultiSelect">
+        <div class="multi-select-trigger" id="personTrigger">全部人员</div>
+        <div class="multi-select-dropdown" id="personDropdown">
+          <div class="multi-select-option" data-value="王昭雪"><span>王昭雪</span></div>
+          <div class="multi-select-option" data-value="李雪"><span>李雪</span></div>
+          <div class="multi-select-option" data-value="张建华"><span>张建华</span></div>
+          <div class="multi-select-option" data-value="李旭"><span>李旭</span></div>
+          <div class="multi-select-option" data-value="毛扬阳"><span>毛扬阳</span></div>
+          <div class="multi-select-footer"><a id="selectAllLink">全选</a><a id="clearAllLink">清空</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-item">
+      <span class="filter-label">保单起期：<span class="help-icon" data-tip="选择年月范围，筛选保单起期在该区间内的数据，默认展示当前1月至今的数据">?</span></span>
+      <div class="date-range">
+        <input type="month" id="startDate" class="filter-input">
+        <span>至</span>
+        <input type="month" id="endDate" class="filter-input">
+      </div>
+    </div>
+
+    <div class="filter-item">
+      <span class="filter-label">所属保司：<span class="help-icon" data-tip="按保险公司筛选数据">?</span></span>
+      <select id="company" class="filter-select">
+        <option value="all">全部保司</option>
+        <option value="picc">中国人民财产保险</option>
+        <option value="pingan">平安健康保险</option>
+        <option value="zhongan">众安在线财产保险</option>
+        <option value="cpic">太平洋健康保险</option>
+        <option value="taikang">泰康健康保险</option>
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-primary" id="queryBtn">🔍 查询</button>
+      <button class="btn btn-default" id="resetBtn">↺ 重置</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="section-header">
+    <h2 class="section-title">📊 理赔指标概览 <span class="help-icon" data-tip="数据查询范围，仅查询团单类别为：意外、补充医疗、百万医疗BBC、易企保、补医百万、易企药安心、大额医疗">?</span></h2>
+    <span class="section-subtitle">数据截止：<span id="dataDate"></span></span>
+  </div>
+
+  <div class="kpi-cards">
+    <div class="kpi-card kpi-primary">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">应支保费（含手续费）<span class="help-icon" data-tip="年缴 = 实际经过月份应支保费合计;
+        月缴 = 经过月份+最后一个月账单应支保费×剩余月份; 
+        半年 = 首期保费/6*团单总月份; 
+        季度 = 首期保费/3*团单总月份;">?</span></div>
+      <div class="kpi-value"><span id="totalPremium">0</span> <span class="kpi-unit">元</span></div>
+      <div class="kpi-compare"><span>同期：<span id="totalSame">¥0</span></span><span class="compare-up" id="totalCompare">↑ 0%</span></div>
+    </div>
+    <div class="kpi-card kpi-success">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">可用赔款（不含手续费）<span class="help-icon" data-tip="应支保费扣除保司手续费，即为可用赔款">?</span></div>
+      <div class="kpi-value"><span id="availableClaim">0</span> <span class="kpi-unit">元</span></div>
+      <div class="kpi-compare"><span>同期：<span id="availableSame">¥0</span></span><span class="compare-up" id="availableCompare">↑ 0%</span></div>
+    </div>
+    <div class="kpi-card kpi-warning">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-label">已用赔款（初审通过）<span class="help-icon" data-tip="查询时间范围内初审通过案件的累计赔款合计">?</span></div>
+      <div class="kpi-value"><span id="usedClaim">0</span> <span class="kpi-unit">元</span></div>
+      <div class="kpi-compare"><span>同期：<span id="usedSame">¥0</span></span><span class="compare-down" id="usedCompare">↓ 0%</span></div>
+    </div>
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">剩余可用赔款<span class="help-icon" data-tip="剩余可用赔款 = 可用赔款 - 已用赔款&#10;当前值为负值时表示已超支">?</span></div>
+      <div class="kpi-value"><span id="remainingClaim">0</span> <span class="kpi-unit">元</span></div>
+      <div class="kpi-compare"><span>同期：<span id="remainingSame">¥0</span></span><span class="compare-up" id="remainingCompare">↑ 0%</span></div>
+    </div>
+  </div>
+
+  <!-- 预警 -->
+  <div class="section-header">
+    <h2 class="section-title">⚠️ 理赔率预警 <span class="help-icon" data-tip="按客服维度汇总负责的团单，理赔率≥70%黄色预警，≥80%红色预警">?</span></h2>
+  </div>
+
+  <div class="alerts-section">
+    <div class="alert-cards" id="alertCards"></div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+
+<script>
+// 数据配置
+const personGroups = {
+  '王昭雪': { cs: '金泯含' },
+  '李雪': { cs: '韩笑' },
+  '张建华': { cs: '韩笑' },
+  '李旭': { cs: '丛洋洋' },
+  '毛扬阳': { cs: '刘胐朏' }
+};
+
+const companyMap = {
+  'picc': '中国人民财产保险股份有限公司',
+  'pingan': '平安健康保险股份有限公司',
+  'zhongan': '众安在线财产保险股份有限公司',
+  'cpic': '太平洋健康保险股份有限公司',
+  'taikang': '泰康健康保险股份有限公司'
+};
+
+const claimData = [
+  { contractParty: '中国人民财产保险股份有限公司', payablePremium: 28656432.50, samePeriodClaim: 21492324.38, customerService: '王昭雪' },
+  { contractParty: '平安健康保险股份有限公司', payablePremium: 16235680.00, samePeriodClaim: 13313257.60, customerService: '李雪' },
+  { contractParty: '众安在线财产保险股份有限公司', payablePremium: 11856920.00, samePeriodClaim: 8300844.00, customerService: '李旭' },
+  { contractParty: '太平洋健康保险股份有限公司', payablePremium: 8456430.00, samePeriodClaim: 6934272.60, customerService: '毛扬阳' },
+  { contractParty: '泰康健康保险股份有限公司', payablePremium: 6523450.00, samePeriodClaim: 4566415.00, customerService: '王昭雪' },
+  { contractParty: '平安健康保险股份有限公司', payablePremium: 9500000.00, samePeriodClaim: 7600000.00, customerService: '张建华' }
+];
+
+// 工具函数
+function fmt(n){return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(function(){t.classList.add('hidden')},2000)}
+function rate(item){return item.payablePremium>0?(item.samePeriodClaim/item.payablePremium*100):0}
+
+// 多选
+var selectedPersons=[];
+function initMultiSelect(){
+  var trigger=document.getElementById('personTrigger');
+  var dropdown=document.getElementById('personDropdown');
+  var opts=dropdown.querySelectorAll('.multi-select-option');
+  trigger.addEventListener('click',function(e){e.stopPropagation();dropdown.classList.toggle('show');trigger.classList.toggle('active')});
+  document.addEventListener('click',function(e){if(!document.getElementById('personMultiSelect').contains(e.target)){dropdown.classList.remove('show');trigger.classList.remove('active')}});
+  opts.forEach(function(opt){
+    opt.addEventListener('click',function(e){
+      e.stopPropagation();
+      var v=opt.getAttribute('data-value');
+      var i=selectedPersons.indexOf(v);
+      if(i===-1){selectedPersons.push(v);opt.classList.add('selected')}
+      else{selectedPersons.splice(i,1);opt.classList.remove('selected')}
+      updateTriggerText();
+    });
+  });
+  document.getElementById('selectAllLink').addEventListener('click',function(e){
+    e.stopPropagation();
+    opts.forEach(function(opt){
+      var v=opt.getAttribute('data-value');
+      opt.classList.add('selected');
+      if(selectedPersons.indexOf(v)===-1)selectedPersons.push(v);
+    });
+    updateTriggerText();
+  });
+  document.getElementById('clearAllLink').addEventListener('click',function(e){
+    e.stopPropagation();
+    opts.forEach(function(opt){opt.classList.remove('selected')});
+    selectedPersons=[];
+    updateTriggerText();
+  });
+}
+function updateTriggerText(){
+  var t=document.getElementById('personTrigger');
+  if(selectedPersons.length===0)t.textContent='全部人员';
+  else if(selectedPersons.length<=2)t.textContent=selectedPersons.join('、');
+  else t.textContent='已选 '+selectedPersons.length+' 人';
+}
+function resetMultiSelect(){
+  selectedPersons=[];
+  document.querySelectorAll('#personDropdown .multi-select-option').forEach(function(o){o.classList.remove('selected')});
+  updateTriggerText();
+}
+
+// KPI
+function renderDashboard(data){
+  var total=0,avail=0,used=0;
+  data.forEach(function(it){
+    total+=it.payablePremium;
+    avail+=it.payablePremium*0.2;
+    used+=it.samePeriodClaim*0.15;
+  });
+  var rem=avail-used;
+  document.getElementById('totalPremium').textContent=fmt(total);
+  document.getElementById('availableClaim').textContent=fmt(avail);
+  document.getElementById('usedClaim').textContent=fmt(used);
+  document.getElementById('remainingClaim').textContent=fmt(rem);
+  document.getElementById('totalSame').textContent='¥'+fmt(total*0.88);
+  document.getElementById('availableSame').textContent='¥'+fmt(avail*0.90);
+  document.getElementById('usedSame').textContent='¥'+fmt(used*0.85);
+  document.getElementById('remainingSame').textContent='¥'+fmt(rem*0.92);
+  document.getElementById('totalCompare').textContent='↑ 12.0%';
+  document.getElementById('availableCompare').textContent='↑ 10.0%';
+  document.getElementById('usedCompare').textContent='↓ 15.0%';
+  document.getElementById('remainingCompare').textContent='↑ 8.0%';
+}
+
+// 预警
+function calculateAlerts(data){
+  var byCS={};
+  data.forEach(function(it){
+    var pInfo=personGroups[it.customerService];
+    if(!pInfo)return;
+    var cs=pInfo.cs;
+    var r=rate(it);
+    if(!byCS[cs])byCS[cs]={cs:cs,persons:[],total:0,over70:0,over80:0};
+    if(byCS[cs].persons.indexOf(it.customerService)===-1)byCS[cs].persons.push(it.customerService);
+    byCS[cs].total++;
+    if(r>=80)byCS[cs].over80++;
+    if(r>=70)byCS[cs].over70++;
+  });
+  return Object.values(byCS).filter(function(a){return a.over70>0||a.over80>0})
+    .map(function(a){return{cs:a.cs,persons:a.persons,total:a.total,over70:a.over70,over80:a.over80,level:a.over80>0?'danger':'warning'}});
+}
+
+function renderAlerts(data){
+  var alerts=calculateAlerts(data);
+  var box=document.getElementById('alertCards');
+  if(alerts.length===0){box.innerHTML='<div class="empty-state">📭 暂无理赔率预警</div>';return}
+  var h='';
+  alerts.forEach(function(a){
+    var pText=a.persons.join('、');
+    if(selectedPersons.length>0){var m=selectedPersons.filter(function(p){return a.persons.indexOf(p)!==-1});if(m.length>0)pText=m.join('、')}
+    h+='<div class="alert-card '+a.level+'">';
+    h+='<div class="alert-left">';
+    h+='<div class="alert-title">'+a.cs+'</div>';
+    h+='<div class="alert-leader">理赔组长：'+pText+'</div>';
+    h+='</div>';
+    h+='<div class="alert-middle">';
+    h+='<div class="alert-row"><div class="alert-row-label">负责团单总数</div><div class="alert-row-value">'+a.total+' 个</div></div>';
+    h+='<div class="alert-row"><div class="alert-row-label">理赔率 ≥ 70% 团单</div><div class="alert-row-value warn-color">'+a.over70+' 个 <span class="alert-badge warn">黄色预警</span></div></div>';
+    h+='<div class="alert-row"><div class="alert-row-label">理赔率 ≥ 80% 团单</div><div class="alert-row-value danger-color">'+a.over80+' 个 <span class="alert-badge danger">红色预警</span></div></div>';
+    h+='</div>';
+    h+='<div class="alert-btn"><button class="btn-sm" onclick="goList(\''+a.cs+'\')">📋 查看团单列表</button></div>';
+    h+='</div>';
+  });
+  box.innerHTML=h;
+}
+
+function goList(cs){window.location.href='group-policy-list.html?cs='+encodeURIComponent(cs)}
+
+// 筛选
+function filterData(){
+  var company=document.getElementById('company').value;
+  var filtered=claimData.slice();
+  if(selectedPersons.length>0)filtered=filtered.filter(function(it){return selectedPersons.indexOf(it.customerService)!==-1});
+  if(company!=='all')filtered=filtered.filter(function(it){return it.contractParty===companyMap[company]});
+  renderDashboard(filtered);
+  renderAlerts(filtered);
+  toast('查询完成');
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded',function(){
+  var now=new Date();
+  var sy=now.getFullYear()+'-01';
+  var ey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  document.getElementById('startDate').value=sy;
+  document.getElementById('endDate').value=ey;
+  document.getElementById('dataDate').textContent=today;
+  document.getElementById('queryBtn').addEventListener('click',filterData);
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    resetMultiSelect();
+    document.getElementById('company').value='all';
+    document.getElementById('startDate').value=sy;
+    document.getElementById('endDate').value=ey;
+    renderDashboard(claimData);
+    renderAlerts(claimData);
+    toast('已重置');
+  });
+  initMultiSelect();
+  renderDashboard(claimData);
+  renderAlerts(claimData);
+});
+</script>
+</body>
+</html>

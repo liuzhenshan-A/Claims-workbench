@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团单列表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 0 20px 40px; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #2c5f8a, #3a7cc0); color: white; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 8px 8px; margin-bottom: 20px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { font-size: 28px; }
+        .logo-text { font-size: 22px; font-weight: 600; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .btn-back { padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .btn-back:hover { background: rgba(255,255,255,0.3); }
+
+        /* Filter */
+        .filter-section { background: white; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-label { font-size: 14px; color: #555; white-space: nowrap; }
+        .filter-select { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; color: #333; background: white; outline: none; }
+        .filter-select:focus { border-color: #4a90c8; }
+        .filter-input { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 14px; color: #333; background: white; outline: none; width: 160px; }
+        .filter-input:focus { border-color: #4a90c8; }
+        .filter-actions { margin-left: auto; display: flex; gap: 12px; }
+        .btn { padding: 8px 20px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #4a90c8; color: white; }
+        .btn-primary:hover { background: #3a7cc0; }
+        .btn-default { background: white; color: #555; border: 1px solid #d9d9d9; }
+        .btn-default:hover { border-color: #4a90c8; color: #4a90c8; }
+
+        /* Table Section */
+        .table-section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+        .table-title { font-size: 16px; font-weight: 600; color: #333; }
+        .table-count { font-size: 13px; color: #999; }
+
+        /* Table */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #f5f7fa; padding: 12px 12px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e8e8e8; white-space: nowrap; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .data-table tr:hover td { background: #fafafa; }
+        .rate-high { color: #e74c3c; font-weight: 600; }
+        .rate-warn { color: #f39c12; font-weight: 600; }
+        .rate-normal { color: #52c41a; font-weight: 600; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Action Button */
+        .btn-action { padding: 4px 12px; font-size: 12px; color: #4a90c8; background: #e6f4ff; border: 1px solid #91caff; border-radius: 4px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .btn-action:hover { background: #bae0ff; border-color: #4a90c8; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay.hidden { display: none; }
+        .modal-content { background: white; border-radius: 8px; width: 900px; max-width: 95vw; max-height: 85vh; overflow: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: white; z-index: 10; }
+        .modal-title { font-size: 16px; font-weight: 600; color: #333; }
+        .modal-close { font-size: 22px; cursor: pointer; color: #999; background: none; border: none; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 20px; }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 24px; border-radius: 4px; font-size: 14px; z-index: 9999; transition: opacity 0.3s; }
+        .toast.hidden { opacity: 0; pointer-events: none; }
+
+        /* Global hidden */
+        .hidden { display: none !important; }
+
+        /* Empty State */
+        .empty-state { padding: 60px 20px; text-align: center; color: #999; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state-text { font-size: 14px; }
+
+        /* Pagination */
+        .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+        .pagination-info { font-size: 13px; color: #999; margin-right: 12px; }
+        .pagination-btn { padding: 6px 12px; font-size: 13px; border: 1px solid #d9d9d9; background: white; border-radius: 4px; cursor: pointer; transition: all 0.2s; color: #555; }
+        .pagination-btn:hover:not(:disabled) { border-color: #4a90c8; color: #4a90c8; }
+        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination-btn.active { background: #4a90c8; color: white; border-color: #4a90c8; }
+        .pagination-size { padding: 4px 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; }
+        .pagination-size:focus { border-color: #4a90c8; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <span class="logo-icon">📋</span>
+                <span class="logo-text">团单列表</span>
+            </div>
+            <div class="header-right">
+                <button class="btn-back" onclick="window.history.back()">← 返回</button>
+            </div>
+        </header>
+
+        <!-- Filter -->
+        <section class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">合同方：</label>
+                <input type="text" id="filterContractParty" class="filter-input" placeholder="请输入合同方" />
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">付款方：</label>
+                <input type="text" id="filterPayer" class="filter-input" placeholder="请输入付款方" />
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">团单号：</label>
+                <input type="text" id="filterPolicyNo" class="filter-input" placeholder="请输入团单号" />
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">理赔率范围：</label>
+                <select id="filterRateRange" class="filter-select">
+                    <option value="all">全部</option>
+                    <option value="normal">正常 (&lt;70%)</option>
+                    <option value="warning">黄色预警 (70%-80%)</option>
+                    <option value="danger">红色预警 (≥80%)</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" id="queryBtn"> 查询</button>
+                <button class="btn btn-default" id="resetBtn"> 重置</button>
+            </div>
+        </section>
+
+        <!-- Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <div class="table-title">团单明细</div>
+                <div class="table-count">共 <span id="totalCount">0</span> 条记录</div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>合同方</th>
+                        <th>付款方</th>
+                        <th>团单号</th>
+                        <th class="text-right">应收保费</th>
+                        <th class="text-right">应支保费</th>
+                        <th class="text-right">满期保费</th>
+                        <th class="text-center">在保人数</th>
+                        <th class="text-right">满期理赔率</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-text">暂无数据</div>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </section>
+    </div>
+
+    <!-- Claim Detail Modal -->
+    <div class="modal-overlay hidden" id="claimDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="claimDetailModalTitle">赔付明细</h3>
+                <button class="modal-close" onclick="document.getElementById('claimDetailModal').classList.add('hidden')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="data-table" id="claimDetailTable">
+                    <thead>
+                        <tr>
+                            <th>保单号</th>
+                            <th>被保人</th>
+                            <th>理赔日期</th>
+                            <th class="text-right">理赔金额</th>
+                            <th>理赔类型</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="claimDetailBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast hidden" id="toast"></div>
+
+    <script>
+    // ============ 数据配置 ============
+    const customerServiceMap = {
+        'jinminhan': { name: '金泯含', matchPerson: '王昭雪', group: '王昭雪组', groupKey: 'wangzhaoxue-group', leader: '王昭雪' },
+        'hanxiao': { name: '韩笑', matchPerson: '李雪', group: '李雪组', groupKey: 'lixue-group', leader: '李雪' },
+        'congyangyang': { name: '丛洋洋', matchPerson: '李旭', group: '李旭组', groupKey: 'lixu-group', leader: '李旭' },
+        'liupiepie': { name: '刘胐朏', matchPerson: '毛扬阳', group: '毛扬阳组', groupKey: 'maoyangyang-group', leader: '毛扬阳' }
+    };
+
+    // Mock data
+    const claimData = [
+        { contractParty: '中国人民财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 28656432.50, payablePremium: 28656432.50, expiryPremium: 25423890.00, insuredCount: 1256, samePeriodClaim: 21492324.38, samePeriodClaimRate: 75.00, expiryClaimRateYoY: -2.1, expiryClaimRate: 14.82, customerService: '王昭雪', policies: [
+            { policyNo: 'POL20260101001', insuredName: '张三', claimDate: '2026-03-15', amount: 5280.50, type: '门诊医疗', status: '已结' },
+            { policyNo: 'POL20260101002', insuredName: '李四', claimDate: '2026-04-20', amount: 12500.00, type: '住院医疗', status: '已结' },
+            { policyNo: 'POL20260101003', insuredName: '王五', claimDate: '2026-05-10', amount: 3200.00, type: '门诊医疗', status: '处理中' }
+        ]},
+        { contractParty: '平安健康保险股份有限公司', payer: '微信支付', receivablePremium: 18235680.00, payablePremium: 16235680.00, expiryPremium: 14520000.00, insuredCount: 892, samePeriodClaim: 13313257.60, samePeriodClaimRate: 82.00, expiryClaimRateYoY: 1.5, expiryClaimRate: 14.85, customerService: '李雪', policies: [
+            { policyNo: 'POL20260215001', insuredName: '赵六', claimDate: '2026-03-28', amount: 8900.00, type: '住院医疗', status: '已结' },
+            { policyNo: 'POL20260215002', insuredName: '钱七', claimDate: '2026-04-15', amount: 15600.00, type: '住院医疗', status: '已结' }
+        ]},
+        { contractParty: '众安在线财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 12856920.00, payablePremium: 11856920.00, expiryPremium: 10230000.00, insuredCount: 634, samePeriodClaim: 8300844.00, samePeriodClaimRate: 70.01, expiryClaimRateYoY: -3.2, expiryClaimRate: 12.28, customerService: '李旭', policies: [
+            { policyNo: 'POL20260301001', insuredName: '孙八', claimDate: '2026-05-05', amount: 4500.00, type: '门诊医疗', status: '已结' }
+        ]},
+        { contractParty: '太平洋健康保险股份有限公司', payer: '银联商务', receivablePremium: 8956430.00, payablePremium: 8456430.00, expiryPremium: 7120000.00, insuredCount: 425, samePeriodClaim: 6934272.60, samePeriodClaimRate: 82.00, expiryClaimRateYoY: 0.8, expiryClaimRate: 12.03, customerService: '毛扬阳', policies: [
+            { policyNo: 'POL20260310001', insuredName: '吴十', claimDate: '2026-04-08', amount: 6200.00, type: '门诊医疗', status: '已结' },
+            { policyNo: 'POL20260310002', insuredName: '郑十一', claimDate: '2026-05-20', amount: 9800.00, type: '住院医疗', status: '处理中' }
+        ]},
+        { contractParty: '泰康健康保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 6823450.00, payablePremium: 6523450.00, expiryPremium: 5450000.00, insuredCount: 312, samePeriodClaim: 4566415.00, samePeriodClaimRate: 70.00, expiryClaimRateYoY: -1.5, expiryClaimRate: 10.81, customerService: '王昭雪', policies: [
+            { policyNo: 'POL20260401001', insuredName: '郑十一', claimDate: '2026-05-18', amount: 3200.00, type: '门诊医疗', status: '已结' }
+        ]},
+        { contractParty: '中国人民财产保险股份有限公司', payer: '微信支付', receivablePremium: 15234560.00, payablePremium: 14234560.00, expiryPremium: 12800000.00, insuredCount: 756, samePeriodClaim: 11520000.00, samePeriodClaimRate: 81.00, expiryClaimRateYoY: 2.3, expiryClaimRate: 15.20, customerService: '李雪', policies: [
+            { policyNo: 'POL20260501001', insuredName: '冯十二', claimDate: '2026-06-01', amount: 7800.00, type: '住院医疗', status: '已结' },
+            { policyNo: 'POL20260501002', insuredName: '陈十三', claimDate: '2026-06-15', amount: 4500.00, type: '门诊医疗', status: '处理中' }
+        ]}
+    ];
+
+    // ============ 工具函数 ============
+    function formatNumber(num) {
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.remove('hidden');
+        setTimeout(function() { t.classList.add('hidden'); }, 2000);
+    }
+
+    // ============ 分页变量 ============
+    var currentPage = 1;
+    var pageSize = 10;
+    var filteredData = [];
+
+    // ============ 渲染表格 ============
+    function renderTable(data) {
+        filteredData = data;
+        currentPage = 1;
+        renderCurrentPage();
+    }
+
+    function renderCurrentPage() {
+        var tbody = document.getElementById('tableBody');
+        var emptyState = document.getElementById('emptyState');
+        var totalCount = document.getElementById('totalCount');
+        var pagination = document.getElementById('pagination');
+
+        if (filteredData.length === 0) {
+            tbody.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            totalCount.textContent = '0';
+            pagination.innerHTML = '';
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        totalCount.textContent = filteredData.length;
+
+        var totalPages = Math.ceil(filteredData.length / pageSize);
+        if (currentPage > totalPages) currentPage = totalPages;
+        var start = (currentPage - 1) * pageSize;
+        var end = start + pageSize;
+        var pageData = filteredData.slice(start, end);
+
+        var html = '';
+        pageData.forEach(function(item) {
+            var rate = item.payablePremium > 0 ? (item.samePeriodClaim / item.payablePremium * 100) : 0;
+            var rateClass = rate >= 80 ? 'rate-high' : (rate >= 70 ? 'rate-warn' : 'rate-normal');
+            var policyNo = item.policies.length > 0 ? item.policies[0].policyNo : '-';
+
+            html += '<tr>';
+            html += '<td>' + item.contractParty + '</td>';
+            html += '<td>' + item.payer + '</td>';
+            html += '<td>' + policyNo + '</td>';
+            html += '<td class="text-right">' + formatNumber(item.receivablePremium) + '</td>';
+            html += '<td class="text-right">' + formatNumber(item.payablePremium) + '</td>';
+            html += '<td class="text-right">' + formatNumber(item.expiryPremium) + '</td>';
+            html += '<td class="text-center">' + item.insuredCount + '</td>';
+            html += '<td class="text-right ' + rateClass + '">' + rate.toFixed(2) + '%</td>';
+            html += '<td class="text-center"><button class="btn-action" onclick="showClaimDetail(\'' + item.contractParty + '\', \'' + policyNo + '\')">查看赔付明细</button></td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+
+        // 渲染分页
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        var pagination = document.getElementById('pagination');
+        var html = '<span class="pagination-info">共 ' + filteredData.length + ' 条，第 ' + currentPage + '/' + totalPages + ' 页</span>';
+
+        // 上一页
+        html += '<button class="pagination-btn" ' + (currentPage === 1 || totalPages <= 1 ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage - 1) + ')">上一页</button>';
+
+        // 页码按钮
+        var startPage = Math.max(1, currentPage - 2);
+        var endPage = Math.min(totalPages, currentPage + 2);
+        for (var i = startPage; i <= endPage; i++) {
+            html += '<button class="pagination-btn ' + (i === currentPage ? 'active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+        }
+
+        // 下一页
+        html += '<button class="pagination-btn" ' + (currentPage === totalPages || totalPages <= 1 ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage + 1) + ')">下一页</button>';
+
+        // 每页条数
+        html += '<select class="pagination-size" onchange="changePageSize(this.value)">';
+        html += '<option value="10"' + (pageSize === 10 ? ' selected' : '') + '>10条/页</option>';
+        html += '<option value="20"' + (pageSize === 20 ? ' selected' : '') + '>20条/页</option>';
+        html += '<option value="50"' + (pageSize === 50 ? ' selected' : '') + '>50条/页</option>';
+        html += '</select>';
+
+        pagination.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        renderCurrentPage();
+    }
+
+    function changePageSize(size) {
+        pageSize = parseInt(size);
+        currentPage = 1;
+        renderCurrentPage();
+    }
+
+    // ============ 显示赔付明细 ============
+    function showClaimDetail(contractParty, policyNo) {
+        var item = claimData.find(function(d) {
+            return d.contractParty === contractParty && d.policies.length > 0 && d.policies[0].policyNo === policyNo;
+        });
+
+        if (!item) {
+            showToast('未找到赔付明细');
+            return;
+        }
+
+        var tbody = document.getElementById('claimDetailBody');
+        var html = '';
+        item.policies.forEach(function(p) {
+            html += '<tr>';
+            html += '<td>' + p.policyNo + '</td>';
+            html += '<td>' + p.insuredName + '</td>';
+            html += '<td>' + p.claimDate + '</td>';
+            html += '<td class="text-right">' + formatNumber(p.amount) + '</td>';
+            html += '<td>' + p.type + '</td>';
+            html += '<td>' + p.status + '</td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+        document.getElementById('claimDetailModalTitle').textContent = '赔付明细 - ' + contractParty + ' (' + policyNo + ')';
+        document.getElementById('claimDetailModal').classList.remove('hidden');
+    }
+
+    // ============ 筛选逻辑 ============
+    function filterData() {
+        var contractParty = document.getElementById('filterContractParty').value.trim();
+        var payer = document.getElementById('filterPayer').value.trim();
+        var policyNo = document.getElementById('filterPolicyNo').value.trim();
+        var rateRange = document.getElementById('filterRateRange').value;
+
+        var filtered = claimData.slice();
+
+        // 合同方筛选
+        if (contractParty) {
+            filtered = filtered.filter(function(item) { return item.contractParty.indexOf(contractParty) !== -1; });
+        }
+
+        // 付款方筛选
+        if (payer) {
+            filtered = filtered.filter(function(item) { return item.payer.indexOf(payer) !== -1; });
+        }
+
+        // 团单号筛选
+        if (policyNo) {
+            filtered = filtered.filter(function(item) {
+                return item.policies.some(function(p) { return p.policyNo.indexOf(policyNo) !== -1; });
+            });
+        }
+
+        // 理赔率范围筛选
+        if (rateRange !== 'all') {
+            filtered = filtered.filter(function(item) {
+                var rate = item.payablePremium > 0 ? (item.samePeriodClaim / item.payablePremium * 100) : 0;
+                if (rateRange === 'normal') return rate < 70;
+                if (rateRange === 'warning') return rate >= 70 && rate < 80;
+                if (rateRange === 'danger') return rate >= 80;
+                return true;
+            });
+        }
+
+        renderTable(filtered);
+        showToast('查询完成');
+    }
+
+    // ============ 页面初始化 ============
+    document.addEventListener('DOMContentLoaded', function() {
+        // 绑定事件
+        document.getElementById('queryBtn').addEventListener('click', filterData);
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            document.getElementById('filterContractParty').value = '';
+            document.getElementById('filterPayer').value = '';
+            document.getElementById('filterPolicyNo').value = '';
+            document.getElementById('filterRateRange').value = 'all';
+            renderTable(claimData);
+            showToast('已重置');
+        });
+
+        // 初始化渲染
+        filterData();
+    });
+    </script>
+</body>
+</html>
