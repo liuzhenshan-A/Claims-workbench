@@ -194,7 +194,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
     </div>
     <div class="kpi-card kpi-warning">
       <div class="kpi-icon">📋</div>
-      <div class="kpi-label">已用赔款（初审通过）<span class="help-icon" data-tip="查询时间范围内初审通过案件的累计赔款合计">?</span></div>
+      <div class="kpi-label">已用赔款（初审通过）<span class="help-icon" data-tip="查询时间范围内初审通过案件的累计赔款合计,不含主险赔款">?</span></div>
       <div class="kpi-value"><span id="usedClaim">0</span> <span class="kpi-unit">元</span></div>
       <div class="kpi-compare"><span>同期：<span id="usedSame">¥0</span></span><span class="compare-down" id="usedCompare">↓ 0%</span></div>
     </div>
@@ -351,9 +351,9 @@ function renderAlerts(data){
     h+='<div class="alert-leader">理赔组长：'+pText+'</div>';
     h+='</div>';
     h+='<div class="alert-middle">';
-    h+='<div class="alert-row"><div class="alert-row-label">负责团单总数</div><div class="alert-row-value">'+a.total+' 个</div></div>';
-    h+='<div class="alert-row"><div class="alert-row-label">理赔率 ≥ 70% 团单</div><div class="alert-row-value warn-color">'+a.over70+' 个 <span class="alert-badge warn">黄色预警</span></div></div>';
-    h+='<div class="alert-row"><div class="alert-row-label">理赔率 ≥ 80% 团单</div><div class="alert-row-value danger-color">'+a.over80+' 个 <span class="alert-badge danger">红色预警</span></div></div>';
+    h+='<div class="alert-row"><div class="alert-row-label">生效中的团单</div><div class="alert-row-value">'+a.total+' 个</div></div>';
+    h+='<div class="alert-row"><div class="alert-row-label">预估满期理赔率 ≥ 70% 团单</div><div class="alert-row-value warn-color">'+a.over70+' 个 <span class="alert-badge warn">黄色预警</span></div></div>';
+    h+='<div class="alert-row"><div class="alert-row-label">预估满期理赔率 ≥ 80% 团单</div><div class="alert-row-value danger-color">'+a.over80+' 个 <span class="alert-badge danger">红色预警</span></div></div>';
     h+='</div>';
     h+='<div class="alert-btn"><button class="btn-sm" onclick="goList(\''+a.cs+'\')">📋 查看团单列表</button></div>';
     h+='</div>';

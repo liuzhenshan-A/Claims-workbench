@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>赔付明细</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        .page-header { background: linear-gradient(135deg, #1a3a5c 0%, #2d5f8f 100%); color: white; padding: 20px 30px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .page-header-title { font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .page-header-title::before { content: '📋'; font-size: 22px; }
+        .btn-back { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .btn-back:hover { background: rgba(255,255,255,0.3); }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+
+        .info-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .info-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 15px; padding-left: 10px; border-left: 3px solid #4a90c8; }
+        .info-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .info-value { font-size: 14px; font-weight: 600; color: #333; }
+        .info-value.rate-high { color: #d32f2f; }
+        .info-value.rate-warn { color: #f57c00; }
+        .info-value.rate-normal { color: #2e7d32; }
+
+        .table-section { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .table-title { font-size: 15px; font-weight: 600; color: #333; padding-left: 10px; border-left: 3px solid #4a90c8; }
+
+        .tabs { display: flex; gap: 0; }
+        .tab-btn { padding: 6px 16px; border: 1px solid #d0d0d0; background: white; cursor: pointer; font-size: 13px; color: #666; transition: all 0.2s; }
+        .tab-btn:first-child { border-radius: 4px 0 0 4px; }
+        .tab-btn:last-child { border-radius: 0 4px 4px 0; }
+        .tab-btn:not(:last-child) { border-right: none; }
+        .tab-btn.active { background: #4a90c8; color: white; border-color: #4a90c8; }
+        .tab-btn:hover:not(.active) { background: #f0f7ff; }
+
+        .table-scroll { overflow-x: auto; }
+        .sub-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .sub-table th, .sub-table td { border: 1px solid #d0d0d0; padding: 10px 12px; white-space: nowrap; }
+        .sub-table thead th { background: #f5f7fa; font-weight: 600; color: #333; text-align: center; }
+        .sub-table tbody td { background: white; text-align: right; }
+        .sub-table tbody td.row-label { text-align: center; background: #fafafa; font-weight: 500; color: #555; }
+        .sub-table tbody tr:hover td { background: #f0f7ff; }
+        .sub-table tbody tr:hover td.row-label { background: #e6f4ff; }
+        .sub-table tbody tr.emp-row td { background: #f0f7ff; }
+        .sub-table tbody tr.emp-row td.row-label { background: #e6f4ff; }
+        .sub-table tbody tr.dep-row td { background: #fffbe6; }
+        .sub-table tbody tr.dep-row td.row-label { background: #fff9d9; }
+        .sub-table tbody td.empty { color: #ccc; text-align: center; }
+
+        .notes-section { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .notes-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 12px; padding-left: 10px; border-left: 3px solid #4a90c8; }
+        .notes-content { font-size: 13px; color: #666; line-height: 2; }
+        .notes-content p { margin: 4px 0; }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <div class="page-header-title">赔付明细</div>
+        <button class="btn-back" onclick="history.back()">← 返回</button>
+    </div>
+
+    <div class="container">
+        <div class="info-section">
+            <div class="info-title">基本信息</div>
+            <div class="info-grid" id="infoGrid"></div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">1. 承保对象统计</div>
+            </div>
+            <div class="table-scroll">
+                <table class="sub-table" id="tableInsured">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">指标</th>
+                            <th>员工</th>
+                            <th>连带人</th>
+                            <th>合计</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">2. 费用类型统计</div>
+                <div class="tabs" data-table="fee">
+                    <button class="tab-btn active" data-mode="emp">员工</button>
+                    <button class="tab-btn" data-mode="dep">连带人</button>
+                    <button class="tab-btn" data-mode="all">全部</button>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="sub-table" id="tableFee">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">指标</th>
+                            <th>中草药</th>
+                            <th>西药/中成药</th>
+                            <th>中医治疗</th>
+                            <th>物理治疗</th>
+                            <th>牙科</th>
+                            <th>康复科</th>
+                            <th>合计</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">3. 医院类型统计</div>
+                <div class="tabs" data-table="hospital">
+                    <button class="tab-btn active" data-mode="emp">员工</button>
+                    <button class="tab-btn" data-mode="dep">连带人</button>
+                    <button class="tab-btn" data-mode="all">全部</button>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="sub-table" id="tableHospital">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">指标</th>
+                            <th>私立医院</th>
+                            <th>康复医院</th>
+                            <th>按摩医院</th>
+                            <th>一级/未定级</th>
+                            <th>合计</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">4. 疾病诊断统计</div>
+                <div class="tabs" data-table="disease">
+                    <button class="tab-btn active" data-mode="emp">员工</button>
+                    <button class="tab-btn" data-mode="dep">连带人</button>
+                    <button class="tab-btn" data-mode="all">全部</button>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="sub-table" id="tableDisease">
+                    <thead>
+                        <tr>
+                            <th style="width:120px;">指标</th>
+                            <th>椎间盘突出</th>
+                            <th>糖尿病</th>
+                            <th>高血压</th>
+                            <th>高血脂</th>
+                            <th>冠心病</th>
+                            <th>脑血管病</th>
+                            <th>合计</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="notes-section">
+            <div class="notes-title">统计规则说明</div>
+            <div class="notes-content">
+                <p>1. <strong>赔付总金额</strong>：按各维度分类统计的赔付金额（扣除前）。</p>
+                <p>2. <strong>扣除免赔额</strong>：按保单约定的起赔额扣除金额。</p>
+                <p>3. <strong>超限额扣除</strong>：超出保额限额部分的扣除金额。</p>
+                <p>4. <strong>超药量扣除</strong>：超出药品使用量限制部分的扣除金额。</p>
+                <p>5. <strong>其他扣除</strong>：扣除免赔额 + 超限额扣除 + 超药量扣除。</p>
+                <p>6. <strong>赔付总人次</strong>：获得赔付的总人次（扣除前）。</p>
+                <p>7. <strong>扣除人次</strong>：有扣除金额的人次。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function formatNumber(num) {
+        if (num === null || num === undefined || num === 0) return '-';
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function genItem(totalAmount, totalCount) {
+        var deductible = Math.round(totalAmount * 0.05 * 100) / 100;
+        var excessDeduct = Math.round(totalAmount * 0.04 * 100) / 100;
+        var drugDeduct = Math.round(totalAmount * 0.03 * 100) / 100;
+        var totalDeduct = Math.round((deductible + excessDeduct + drugDeduct) * 100) / 100;
+        var deductCount = Math.round(totalCount * 0.20);
+        return { totalAmount: totalAmount, deductible: deductible, excessDeduct: excessDeduct, drugDeduct: drugDeduct, totalDeduct: totalDeduct, totalCount: totalCount, deductCount: deductCount };
+    }
+
+    function genDims(baseAmount, baseCount) {
+        var dims = {};
+        var scales = {
+            herbMedicine: 0.15, westernMedicine: 0.25, tcmTreatment: 0.08,
+            physicalTherapy: 0.12, dental: 0.06, rehab: 0.08,
+            privateHosp: 0.20, rehabHosp: 0.08, massageHosp: 0.05, level1Hosp: 0.10,
+            protrusion: 0.12, diabetes: 0.15, hypertension: 0.14, hyperlipidemia: 0.10, chd: 0.08, cvd: 0.06
+        };
+        Object.keys(scales).forEach(function(key) {
+            dims[key] = genItem(Math.round(baseAmount * scales[key] * 100) / 100, Math.max(1, Math.round(baseCount * scales[key] * 0.8)));
+        });
+        return dims;
+    }
+
+    var rowDefs = [
+        { label: '赔付总金额', key: 'totalAmount', money: true },
+        { label: '扣除免赔额', key: 'deductible', money: true },
+        { label: '超限额扣除', key: 'excessDeduct', money: true },
+        { label: '超药量扣除', key: 'drugDeduct', money: true },
+        { label: '其他扣除', key: 'totalDeduct', money: true },
+        { label: '赔付总人次', key: 'totalCount', money: false },
+        { label: '扣除人次', key: 'deductCount', money: false }
+    ];
+
+    var allData = {
+        'POL20260101001': { contractParty: '中国人民财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', policyNo: 'POL20260101001', associationName: '阿里巴巴集团', insuranceType: '团体医疗险', employeeCount: 1120, dependentCount: 136, medicalClaimRate: 75.00, estimatedExpiryClaimRate: 75.00, empAmount: 21492324.38, depAmount: 3568900.00, empCount: 2345, depCount: 356 },
+        'POL20260215001': { contractParty: '平安健康保险股份有限公司', payer: '微信支付', policyNo: 'POL20260215001', associationName: '腾讯科技', insuranceType: '团体医疗险', employeeCount: 780, dependentCount: 112, medicalClaimRate: 82.00, estimatedExpiryClaimRate: 82.00, empAmount: 13313257.60, depAmount: 2156800.00, empCount: 1567, depCount: 234 },
+        'POL20260301001': { contractParty: '众安在线财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', policyNo: 'POL20260301001', associationName: '美团点评', insuranceType: '团体意外险', employeeCount: 580, dependentCount: 54, medicalClaimRate: 70.01, estimatedExpiryClaimRate: 70.01, empAmount: 8300844.00, depAmount: 1256400.00, empCount: 1023, depCount: 123 },
+        'POL20260310001': { contractParty: '太平洋健康保险股份有限公司', payer: '银联商务', policyNo: 'POL20260310001', associationName: '京东商城', insuranceType: '团体医疗险', employeeCount: 380, dependentCount: 45, medicalClaimRate: 82.00, estimatedExpiryClaimRate: 82.00, empAmount: 6934272.60, depAmount: 956800.00, empCount: 689, depCount: 78 },
+        'POL20260401001': { contractParty: '泰康健康保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', policyNo: 'POL20260401001', associationName: '字节跳动', insuranceType: '团体医疗险', employeeCount: 280, dependentCount: 32, medicalClaimRate: 70.00, estimatedExpiryClaimRate: 70.00, empAmount: 4566415.00, depAmount: 656400.00, empCount: 512, depCount: 56 },
+        'POL20260501001': { contractParty: '中国人民财产保险股份有限公司', payer: '微信支付', policyNo: 'POL20260501001', associationName: '百度在线', insuranceType: '团体意外险', employeeCount: 680, dependentCount: 76, medicalClaimRate: 81.00, estimatedExpiryClaimRate: 81.00, empAmount: 11520000.00, depAmount: 1856400.00, empCount: 1178, depCount: 189 }
+    };
+
+    var state = { empDims: null, depDims: null };
+
+    function getQueryParam(name) {
+        var params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
+
+    function renderTable(tableId, cols, dims) {
+        var html = '';
+        rowDefs.forEach(function(row) {
+            html += '<tr><td class="row-label">' + row.label + '</td>';
+            var rowTotal = 0;
+            cols.forEach(function(col) {
+                var val = dims[col.key] ? dims[col.key][row.key] : 0;
+                rowTotal += val;
+                if (val === 0) {
+                    html += '<td class="empty">-</td>';
+                } else if (row.money) {
+                    html += '<td>' + formatNumber(val) + '</td>';
+                } else {
+                    html += '<td>' + val + '</td>';
+                }
+            });
+            html += '<td>' + (row.money ? formatNumber(rowTotal) : rowTotal) + '</td>';
+            html += '</tr>';
+        });
+        document.querySelector('#' + tableId + ' tbody').innerHTML = html;
+    }
+
+    function renderTableAll(tableId, cols, empDims, depDims) {
+        var html = '';
+        rowDefs.forEach(function(row) {
+            // 员工行
+            html += '<tr class="emp-row"><td class="row-label">' + row.label + '（员工）</td>';
+            var empTotal = 0;
+            cols.forEach(function(col) {
+                var val = empDims[col.key] ? empDims[col.key][row.key] : 0;
+                empTotal += val;
+                if (val === 0) {
+                    html += '<td class="empty">-</td>';
+                } else if (row.money) {
+                    html += '<td>' + formatNumber(val) + '</td>';
+                } else {
+                    html += '<td>' + val + '</td>';
+                }
+            });
+            html += '<td>' + (row.money ? formatNumber(empTotal) : empTotal) + '</td>';
+            html += '</tr>';
+
+            // 连带人行
+            html += '<tr class="dep-row"><td class="row-label">' + row.label + '（连带人）</td>';
+            var depTotal = 0;
+            cols.forEach(function(col) {
+                var val = depDims[col.key] ? depDims[col.key][row.key] : 0;
+                depTotal += val;
+                if (val === 0) {
+                    html += '<td class="empty">-</td>';
+                } else if (row.money) {
+                    html += '<td>' + formatNumber(val) + '</td>';
+                } else {
+                    html += '<td>' + val + '</td>';
+                }
+            });
+            html += '<td>' + (row.money ? formatNumber(depTotal) : depTotal) + '</td>';
+            html += '</tr>';
+        });
+        document.querySelector('#' + tableId + ' tbody').innerHTML = html;
+    }
+
+    function switchTab(tableName, mode) {
+        var tabGroup = document.querySelector('.tabs[data-table="' + tableName + '"]');
+        tabGroup.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        var configs = {
+            fee: {
+                id: 'tableFee',
+                cols: [
+                    { key: 'herbMedicine' }, { key: 'westernMedicine' }, { key: 'tcmTreatment' },
+                    { key: 'physicalTherapy' }, { key: 'dental' }, { key: 'rehab' }
+                ]
+            },
+            hospital: {
+                id: 'tableHospital',
+                cols: [
+                    { key: 'privateHosp' }, { key: 'rehabHosp' }, { key: 'massageHosp' }, { key: 'level1Hosp' }
+                ]
+            },
+            disease: {
+                id: 'tableDisease',
+                cols: [
+                    { key: 'protrusion' }, { key: 'diabetes' }, { key: 'hypertension' },
+                    { key: 'hyperlipidemia' }, { key: 'chd' }, { key: 'cvd' }
+                ]
+            }
+        };
+
+        var cfg = configs[tableName];
+        if (mode === 'emp') {
+            renderTable(cfg.id, cfg.cols, state.empDims);
+        } else if (mode === 'dep') {
+            renderTable(cfg.id, cfg.cols, state.depDims);
+        } else {
+            renderTableAll(cfg.id, cfg.cols, state.empDims, state.depDims);
+        }
+    }
+
+    function renderPage() {
+        var policyNo = getQueryParam('policyNo');
+        var data = allData[policyNo];
+        if (!data) {
+            document.querySelector('.container').innerHTML = '<div style="text-align:center;padding:60px;color:#999;">未找到该团单的赔付明细数据</div>';
+            return;
+        }
+
+        var rateClass = data.estimatedExpiryClaimRate >= 80 ? 'rate-high' : (data.estimatedExpiryClaimRate >= 70 ? 'rate-warn' : 'rate-normal');
+
+        var infoHtml = '';
+        infoHtml += '<div class="info-item"><span class="info-label">合同方</span><span class="info-value">' + data.contractParty + '</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">付款方</span><span class="info-value">' + data.payer + '</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">团单号</span><span class="info-value">' + data.policyNo + '</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">关联名称</span><span class="info-value">' + data.associationName + '</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">实时理赔率</span><span class="info-value ' + rateClass + '">' + data.medicalClaimRate.toFixed(2) + '%</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">预估满期理赔率</span><span class="info-value ' + rateClass + '">' + data.estimatedExpiryClaimRate.toFixed(2) + '%</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">员工在保</span><span class="info-value">' + data.employeeCount + ' 人</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">连带人在保</span><span class="info-value">' + data.dependentCount + ' 人</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">保险类型</span><span class="info-value">' + data.insuranceType + '</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">员工赔付人次</span><span class="info-value">' + data.empCount + ' 人次</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">连带人赔付人次</span><span class="info-value">' + data.depCount + ' 人次</span></div>';
+        infoHtml += '<div class="info-item"><span class="info-label">赔付总金额</span><span class="info-value">' + formatNumber(data.empAmount + data.depAmount) + ' 元</span></div>';
+        document.getElementById('infoGrid').innerHTML = infoHtml;
+
+        // 表1: 承保对象
+        var empItem = genItem(data.empAmount, data.empCount);
+        var depItem = genItem(data.depAmount, data.depCount);
+        var insuredHtml = '';
+        rowDefs.forEach(function(row) {
+            var total = empItem[row.key] + depItem[row.key];
+            insuredHtml += '<tr><td class="row-label">' + row.label + '</td>';
+            [empItem, depItem, { totalAmount: total, deductible: total, excessDeduct: total, drugDeduct: total, totalDeduct: total, totalCount: total, deductCount: total }].forEach(function(item, idx) {
+                var val = idx === 2 ? total : item[row.key];
+                if (val === 0) {
+                    insuredHtml += '<td class="empty">-</td>';
+                } else if (row.money) {
+                    insuredHtml += '<td>' + formatNumber(val) + '</td>';
+                } else {
+                    insuredHtml += '<td>' + val + '</td>';
+                }
+            });
+            insuredHtml += '</tr>';
+        });
+        document.querySelector('#tableInsured tbody').innerHTML = insuredHtml;
+
+        // 生成两套维度数据
+        state.empDims = genDims(data.empAmount, data.empCount);
+        state.depDims = genDims(data.depAmount, data.depCount);
+
+        // 初始化各表为员工模式
+        switchTab('fee', 'emp');
+        switchTab('hospital', 'emp');
+        switchTab('disease', 'emp');
+
+        document.title = '赔付明细 - ' + data.associationName;
+    }
+
+    document.querySelectorAll('.tabs').forEach(function(tabGroup) {
+        var tableName = tabGroup.dataset.table;
+        tabGroup.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                switchTab(tableName, btn.dataset.mode);
+            });
+        });
+    });
+
+    renderPage();
+    </script>
+</body>
+</html>

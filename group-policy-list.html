@@ -35,15 +35,17 @@
 
         /* Table Section */
         .table-section { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .table-wrapper { overflow-x: auto; }
         .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
         .table-title { font-size: 16px; font-weight: 600; color: #333; }
         .table-count { font-size: 13px; color: #999; }
 
         /* Table */
-        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .data-table th { background: #f5f7fa; padding: 12px 12px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e8e8e8; white-space: nowrap; }
-        .data-table td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
-        .data-table tr:hover td { background: #fafafa; }
+        .data-table { width: 100%; min-width: 2200px; border-collapse: collapse; font-size: 13px; }
+        .data-table th { background: #f5f7fa; padding: 12px 10px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #e8e8e8; white-space: nowrap; position: sticky; top: 0; }
+        .data-table td { padding: 12px 10px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+        .data-table tbody tr:nth-child(even) td { background: #fafbfc; }
+        .data-table tr:hover td { background: #e6f4ff !important; }
         .rate-high { color: #e74c3c; font-weight: 600; }
         .rate-warn { color: #f39c12; font-weight: 600; }
         .rate-normal { color: #52c41a; font-weight: 600; }
@@ -53,16 +55,6 @@
         /* Action Button */
         .btn-action { padding: 4px 12px; font-size: 12px; color: #4a90c8; background: #e6f4ff; border: 1px solid #91caff; border-radius: 4px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
         .btn-action:hover { background: #bae0ff; border-color: #4a90c8; }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .modal-overlay.hidden { display: none; }
-        .modal-content { background: white; border-radius: 8px; width: 900px; max-width: 95vw; max-height: 85vh; overflow: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: white; z-index: 10; }
-        .modal-title { font-size: 16px; font-weight: 600; color: #333; }
-        .modal-close { font-size: 22px; cursor: pointer; color: #999; background: none; border: none; }
-        .modal-close:hover { color: #333; }
-        .modal-body { padding: 20px; }
 
         /* Toast */
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 24px; border-radius: 4px; font-size: 14px; z-index: 9999; transition: opacity 0.3s; }
@@ -85,6 +77,16 @@
         .pagination-btn.active { background: #4a90c8; color: white; border-color: #4a90c8; }
         .pagination-size { padding: 4px 8px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; outline: none; }
         .pagination-size:focus { border-color: #4a90c8; }
+
+        /* Help Icon */
+        .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; background: #d9d9d9; color: #666; font-size: 10px; font-weight: 600; cursor: pointer; margin-left: 4px; vertical-align: middle; position: relative; transition: all 0.2s; }
+        .help-icon:hover { background: #4a90c8; color: white; }
+        .help-tooltip { position: fixed; background: rgba(0,0,0,0.85); color: white; font-size: 12px; padding: 8px 12px; border-radius: 4px; white-space: normal; max-width: 240px; line-height: 1.5; z-index: 10000; pointer-events: none; opacity: 0; transition: opacity 0.2s; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .help-tooltip::after { content: ''; position: absolute; border-width: 5px; border-style: solid; }
+        .help-tooltip.down::after { top: 100%; left: 50%; margin-left: -5px; border-color: rgba(0,0,0,0.85) transparent transparent transparent; }
+        .help-tooltip.up::after { bottom: 100%; left: 50%; margin-left: -5px; border-color: transparent transparent rgba(0,0,0,0.85) transparent; }
+
+        .th-content { display: inline-flex; align-items: center; }
     </style>
 </head>
 <body>
@@ -115,7 +117,15 @@
                 <input type="text" id="filterPolicyNo" class="filter-input" placeholder="请输入团单号" />
             </div>
             <div class="filter-group">
-                <label class="filter-label">理赔率范围：</label>
+                <label class="filter-label">保险类型：</label>
+                <select id="filterInsuranceType" class="filter-select">
+                    <option value="all">全部</option>
+                    <option value="团体医疗险">团体医疗险</option>
+                    <option value="团体意外险">团体意外险</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">理赔率预警：<span class="help-icon" title="">?<span class="help-tooltip">按预估满期理赔率判断预警等级：<br/>正常：<70% ｜ 黄色预警：70%-80% ｜ 红色预警：≥80%</span></span></label>
                 <select id="filterRateRange" class="filter-select">
                     <option value="all">全部</option>
                     <option value="normal">正常 (&lt;70%)</option>
@@ -135,22 +145,39 @@
                 <div class="table-title">团单明细</div>
                 <div class="table-count">共 <span id="totalCount">0</span> 条记录</div>
             </div>
+            <div class="table-wrapper">
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>合同方</th>
-                        <th>付款方</th>
-                        <th>团单号</th>
-                        <th class="text-right">应收保费</th>
-                        <th class="text-right">应支保费</th>
-                        <th class="text-right">满期保费</th>
-                        <th class="text-center">在保人数</th>
-                        <th class="text-right">满期理赔率</th>
-                        <th class="text-center">操作</th>
+                        <th><span class="th-content">团单号</span></th>
+                        <th><span class="th-content">关联名称</span></th>
+                        <th><span class="th-content">合同方</span></th>
+                        <th><span class="th-content">付款方</span></th>
+                        <th><span class="th-content">保险类型</span></th>
+                        <th class="text-center"><span class="th-content">员工在保人数<span class="help-icon" title="">?<span class="help-tooltip">团单最后一个月账单员工投保人数</span></span></span></th>
+                        <th class="text-center"><span class="th-content">连带在保人数<span class="help-icon" title="">?<span class="help-tooltip">团单最后一个月账单连带投保人数</span></span></span></th>
+                        <th class="text-right"><span class="th-content">实时应收<span class="help-icon" title="">?<span class="help-tooltip">截至当前账期，团单对应的应收保费总额</span></span></span></th>
+                        <th class="text-right"><span class="th-content">实时应支<span class="help-icon" title="">?<span class="help-tooltip">截至当前账期，团单对应的应支保费总额</span></span></span></th>
+                        <th class="text-right"><span class="th-content">满期应收<span class="help-icon" title="">?<span class="help-tooltip">年缴=已出账单实际金额，月缴=已出账单实际金额+最后一个月账单金额+剩余月份，季度=首期保费/3*团单保障期限月份，半年=首期保费/6*团单保障期限月份</span></span></span></th>
+                        <th class="text-right"><span class="th-content">满期应支<span class="help-icon" title="">?<span class="help-tooltip">年缴=已出账单实际金额，月缴=已出账单实际金额+最后一个月账单金额+剩余月份，季度=首期保费/3*团单保障期限月份，半年=首期保费/6*团单保障期限月份</span></span></span></th>
+                        <th class="text-right"><span class="th-content">实时理赔金额<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-right"><span class="th-content">实时理赔率<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-right"><span class="th-content">保司实时理赔率<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-right"><span class="th-content">预估满期赔款<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-right"><span class="th-content">预估满期理赔率<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-center"><span class="th-content">预估保司满期理赔率<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-center"><span class="th-content">总赔付笔数<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-center"><span class="th-content">使用人数<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-right"><span class="th-content">员工使用率<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th><span class="th-content">投保期限</span></th>
+                        <th><span class="th-content">投保保司</span></th>
+                        <th><span class="th-content">所属客服<span class="help-icon" title="">?<span class="help-tooltip">同新理赔查询处计算逻辑保持一致</span></span></span></th>
+                        <th class="text-center"><span class="th-content">操作</span></th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
+            </div>
             <div class="empty-state hidden" id="emptyState">
                 <div class="empty-state-icon">📭</div>
                 <div class="empty-state-text">暂无数据</div>
@@ -159,35 +186,15 @@
         </section>
     </div>
 
-    <!-- Claim Detail Modal -->
-    <div class="modal-overlay hidden" id="claimDetailModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="claimDetailModalTitle">赔付明细</h3>
-                <button class="modal-close" onclick="document.getElementById('claimDetailModal').classList.add('hidden')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <table class="data-table" id="claimDetailTable">
-                    <thead>
-                        <tr>
-                            <th>保单号</th>
-                            <th>被保人</th>
-                            <th>理赔日期</th>
-                            <th class="text-right">理赔金额</th>
-                            <th>理赔类型</th>
-                            <th>状态</th>
-                        </tr>
-                    </thead>
-                    <tbody id="claimDetailBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast -->
     <div class="toast hidden" id="toast"></div>
 
     <script>
+    // ============ 工具函数 ============
+    function formatNumber(num) {
+        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
     // ============ 数据配置 ============
     const customerServiceMap = {
         'jinminhan': { name: '金泯含', matchPerson: '王昭雪', group: '王昭雪组', groupKey: 'wangzhaoxue-group', leader: '王昭雪' },
@@ -198,35 +205,13 @@
 
     // Mock data
     const claimData = [
-        { contractParty: '中国人民财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 28656432.50, payablePremium: 28656432.50, expiryPremium: 25423890.00, insuredCount: 1256, samePeriodClaim: 21492324.38, samePeriodClaimRate: 75.00, expiryClaimRateYoY: -2.1, expiryClaimRate: 14.82, customerService: '王昭雪', policies: [
-            { policyNo: 'POL20260101001', insuredName: '张三', claimDate: '2026-03-15', amount: 5280.50, type: '门诊医疗', status: '已结' },
-            { policyNo: 'POL20260101002', insuredName: '李四', claimDate: '2026-04-20', amount: 12500.00, type: '住院医疗', status: '已结' },
-            { policyNo: 'POL20260101003', insuredName: '王五', claimDate: '2026-05-10', amount: 3200.00, type: '门诊医疗', status: '处理中' }
-        ]},
-        { contractParty: '平安健康保险股份有限公司', payer: '微信支付', receivablePremium: 18235680.00, payablePremium: 16235680.00, expiryPremium: 14520000.00, insuredCount: 892, samePeriodClaim: 13313257.60, samePeriodClaimRate: 82.00, expiryClaimRateYoY: 1.5, expiryClaimRate: 14.85, customerService: '李雪', policies: [
-            { policyNo: 'POL20260215001', insuredName: '赵六', claimDate: '2026-03-28', amount: 8900.00, type: '住院医疗', status: '已结' },
-            { policyNo: 'POL20260215002', insuredName: '钱七', claimDate: '2026-04-15', amount: 15600.00, type: '住院医疗', status: '已结' }
-        ]},
-        { contractParty: '众安在线财产保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 12856920.00, payablePremium: 11856920.00, expiryPremium: 10230000.00, insuredCount: 634, samePeriodClaim: 8300844.00, samePeriodClaimRate: 70.01, expiryClaimRateYoY: -3.2, expiryClaimRate: 12.28, customerService: '李旭', policies: [
-            { policyNo: 'POL20260301001', insuredName: '孙八', claimDate: '2026-05-05', amount: 4500.00, type: '门诊医疗', status: '已结' }
-        ]},
-        { contractParty: '太平洋健康保险股份有限公司', payer: '银联商务', receivablePremium: 8956430.00, payablePremium: 8456430.00, expiryPremium: 7120000.00, insuredCount: 425, samePeriodClaim: 6934272.60, samePeriodClaimRate: 82.00, expiryClaimRateYoY: 0.8, expiryClaimRate: 12.03, customerService: '毛扬阳', policies: [
-            { policyNo: 'POL20260310001', insuredName: '吴十', claimDate: '2026-04-08', amount: 6200.00, type: '门诊医疗', status: '已结' },
-            { policyNo: 'POL20260310002', insuredName: '郑十一', claimDate: '2026-05-20', amount: 9800.00, type: '住院医疗', status: '处理中' }
-        ]},
-        { contractParty: '泰康健康保险股份有限公司', payer: '支付宝（中国）网络技术有限公司', receivablePremium: 6823450.00, payablePremium: 6523450.00, expiryPremium: 5450000.00, insuredCount: 312, samePeriodClaim: 4566415.00, samePeriodClaimRate: 70.00, expiryClaimRateYoY: -1.5, expiryClaimRate: 10.81, customerService: '王昭雪', policies: [
-            { policyNo: 'POL20260401001', insuredName: '郑十一', claimDate: '2026-05-18', amount: 3200.00, type: '门诊医疗', status: '已结' }
-        ]},
-        { contractParty: '中国人民财产保险股份有限公司', payer: '微信支付', receivablePremium: 15234560.00, payablePremium: 14234560.00, expiryPremium: 12800000.00, insuredCount: 756, samePeriodClaim: 11520000.00, samePeriodClaimRate: 81.00, expiryClaimRateYoY: 2.3, expiryClaimRate: 15.20, customerService: '李雪', policies: [
-            { policyNo: 'POL20260501001', insuredName: '冯十二', claimDate: '2026-06-01', amount: 7800.00, type: '住院医疗', status: '已结' },
-            { policyNo: 'POL20260501002', insuredName: '陈十三', claimDate: '2026-06-15', amount: 4500.00, type: '门诊医疗', status: '处理中' }
-        ]}
+        { policyNo: 'POL20260101001', associationName: '阿里巴巴集团', contractParty: '中国人民财产保险股份有限公司', insurerCompany: '中国人保', payer: '支付宝（中国）网络技术有限公司', insuranceType: '团体医疗险', employeeCount: 1120, dependentCount: 136, receivablePremium: 28656432.50, payablePremium: 28656432.50, expiryReceivablePremium: 25423890.00, expiryPayablePremium: 25423890.00, medicalClaimAmount: 21492324.38, medicalClaimRate: 75.00, companyRealTimeClaimRate: 68.50, estimatedExpiryPremium: 28656432.50, estimatedExpiryClaim: 21492324.38, estimatedExpiryClaimRate: 75.00, companyEstExpiryClaimRate: 70.20, totalClaimCount: 2345, usageCount: 2100, employeeUsageRate: 95.50, insurancePeriod: '2026-01-01 至 2026-12-31', customerService: '金泯含' },
+        { policyNo: 'POL20260215001', associationName: '腾讯科技', contractParty: '平安健康保险股份有限公司', insurerCompany: '平安健康', payer: '微信支付', insuranceType: '团体医疗险', employeeCount: 780, dependentCount: 112, receivablePremium: 18235680.00, payablePremium: 16235680.00, expiryReceivablePremium: 14520000.00, expiryPayablePremium: 14520000.00, medicalClaimAmount: 13313257.60, medicalClaimRate: 82.00, companyRealTimeClaimRate: 78.30, estimatedExpiryPremium: 18235680.00, estimatedExpiryClaim: 14953257.60, estimatedExpiryClaimRate: 82.00, companyEstExpiryClaimRate: 80.50, totalClaimCount: 1567, usageCount: 1456, employeeUsageRate: 92.30, insurancePeriod: '2026-02-15 至 2027-02-14', customerService: '金泯含' },
+        { policyNo: 'POL20260301001', associationName: '美团点评', contractParty: '众安在线财产保险股份有限公司', insurerCompany: '众安在线', payer: '支付宝（中国）网络技术有限公司', insuranceType: '团体意外险', employeeCount: 580, dependentCount: 54, receivablePremium: 12856920.00, payablePremium: 11856920.00, expiryReceivablePremium: 10230000.00, expiryPayablePremium: 10230000.00, medicalClaimAmount: 8300844.00, medicalClaimRate: 70.01, companyRealTimeClaimRate: 66.80, estimatedExpiryPremium: 12856920.00, estimatedExpiryClaim: 8999844.00, estimatedExpiryClaimRate: 70.01, companyEstExpiryClaimRate: 68.00, totalClaimCount: 1023, usageCount: 986, employeeUsageRate: 88.50, insurancePeriod: '2026-03-01 至 2027-02-28', customerService: '金泯含' },
+        { policyNo: 'POL20260310001', associationName: '京东商城', contractParty: '太平洋健康保险股份有限公司', insurerCompany: '太平洋健康', payer: '银联商务', insuranceType: '团体医疗险', employeeCount: 380, dependentCount: 45, receivablePremium: 8956430.00, payablePremium: 8456430.00, expiryReceivablePremium: 7120000.00, expiryPayablePremium: 7120000.00, medicalClaimAmount: 6934272.60, medicalClaimRate: 82.00, companyRealTimeClaimRate: 79.50, estimatedExpiryPremium: 8956430.00, estimatedExpiryClaim: 7344272.60, estimatedExpiryClaimRate: 82.00, companyEstExpiryClaimRate: 81.20, totalClaimCount: 689, usageCount: 612, employeeUsageRate: 90.20, insurancePeriod: '2026-03-10 至 2027-03-09', customerService: '金泯含' },
+        { policyNo: 'POL20260401001', associationName: '字节跳动', contractParty: '泰康健康保险股份有限公司', insurerCompany: '泰康健康', payer: '支付宝（中国）网络技术有限公司', insuranceType: '团体医疗险', employeeCount: 280, dependentCount: 32, receivablePremium: 6823450.00, payablePremium: 6523450.00, expiryReceivablePremium: 5450000.00, expiryPayablePremium: 5450000.00, medicalClaimAmount: 4566415.00, medicalClaimRate: 70.00, companyRealTimeClaimRate: 65.20, estimatedExpiryPremium: 6823450.00, estimatedExpiryClaim: 4776415.00, estimatedExpiryClaimRate: 70.00, companyEstExpiryClaimRate: 67.50, totalClaimCount: 512, usageCount: 498, employeeUsageRate: 93.80, insurancePeriod: '2026-04-01 至 2027-03-31', customerService: '金泯含' },
+        { policyNo: 'POL20260501001', associationName: '百度在线', contractParty: '中国人民财产保险股份有限公司', insurerCompany: '中国人保', payer: '微信支付', insuranceType: '团体意外险', employeeCount: 680, dependentCount: 76, receivablePremium: 15234560.00, payablePremium: 14234560.00, expiryReceivablePremium: 12800000.00, expiryPayablePremium: 12800000.00, medicalClaimAmount: 11520000.00, medicalClaimRate: 81.00, companyRealTimeClaimRate: 77.80, estimatedExpiryPremium: 15234560.00, estimatedExpiryClaim: 12340000.00, estimatedExpiryClaimRate: 81.00, companyEstExpiryClaimRate: 79.50, totalClaimCount: 1178, usageCount: 1098, employeeUsageRate: 91.60, insurancePeriod: '2026-05-01 至 2027-04-30', customerService: '金泯含' }
     ];
-
-    // ============ 工具函数 ============
-    function formatNumber(num) {
-        return num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
 
     function showToast(msg) {
         var t = document.getElementById('toast');
@@ -272,20 +257,33 @@
 
         var html = '';
         pageData.forEach(function(item) {
-            var rate = item.payablePremium > 0 ? (item.samePeriodClaim / item.payablePremium * 100) : 0;
-            var rateClass = rate >= 80 ? 'rate-high' : (rate >= 70 ? 'rate-warn' : 'rate-normal');
-            var policyNo = item.policies.length > 0 ? item.policies[0].policyNo : '-';
+            var estRateClass = item.estimatedExpiryClaimRate >= 80 ? 'rate-high' : (item.estimatedExpiryClaimRate >= 70 ? 'rate-warn' : 'rate-normal');
 
             html += '<tr>';
-            html += '<td>' + item.contractParty + '</td>';
-            html += '<td>' + item.payer + '</td>';
-            html += '<td>' + policyNo + '</td>';
-            html += '<td class="text-right">' + formatNumber(item.receivablePremium) + '</td>';
-            html += '<td class="text-right">' + formatNumber(item.payablePremium) + '</td>';
-            html += '<td class="text-right">' + formatNumber(item.expiryPremium) + '</td>';
-            html += '<td class="text-center">' + item.insuredCount + '</td>';
-            html += '<td class="text-right ' + rateClass + '">' + rate.toFixed(2) + '%</td>';
-            html += '<td class="text-center"><button class="btn-action" onclick="showClaimDetail(\'' + item.contractParty + '\', \'' + policyNo + '\')">查看赔付明细</button></td>';
+            html += '<td>' + item.policyNo + '</td>';                           // 1.团单号
+            html += '<td>' + item.associationName + '</td>';                     // 2.关联名称
+            html += '<td>' + item.contractParty + '</td>';                       // 3.合同方
+            html += '<td>' + item.payer + '</td>';                               // 4.付款方
+            html += '<td>' + item.insuranceType + '</td>';                       // 5.保险类型
+            html += '<td class="text-center">' + item.employeeCount + '</td>';   // 6.员工在保人数
+            html += '<td class="text-center">' + item.dependentCount + '</td>';  // 7.连带在保人数
+            html += '<td class="text-right">' + formatNumber(item.receivablePremium) + '</td>';   // 8.实时应收
+            html += '<td class="text-right">' + formatNumber(item.payablePremium) + '</td>';      // 9.实时应支
+            html += '<td class="text-right">' + formatNumber(item.expiryReceivablePremium) + '</td>'; // 10.满期应收
+            html += '<td class="text-right">' + formatNumber(item.expiryPayablePremium) + '</td>';    // 11.满期应支
+            html += '<td class="text-right">' + formatNumber(item.medicalClaimAmount) + '</td>';      // 12.实时理赔金额
+            html += '<td class="text-right">' + item.medicalClaimRate.toFixed(2) + '%</td>';          // 13.实时理赔率
+            html += '<td class="text-right">' + item.companyRealTimeClaimRate.toFixed(2) + '%</td>';  // 14.保司实时理赔率
+            html += '<td class="text-right">' + formatNumber(item.estimatedExpiryClaim) + '</td>';    // 15.预估满期赔款
+            html += '<td class="text-right ' + estRateClass + '">' + item.estimatedExpiryClaimRate.toFixed(2) + '%</td>'; // 16.预估满期理赔率
+            html += '<td class="text-center">' + item.companyEstExpiryClaimRate.toFixed(2) + '%</td>';  // 17.预估保司满期理赔率
+            html += '<td class="text-center">' + item.totalClaimCount + '</td>';   // 18.总赔付笔数
+            html += '<td class="text-center">' + item.usageCount + '</td>';        // 19.使用人数
+            html += '<td class="text-right">' + item.employeeUsageRate.toFixed(2) + '%</td>'; // 20.员工使用率
+            html += '<td>' + item.insurancePeriod + '</td>';                      // 21.投保期限
+            html += '<td>' + item.insurerCompany + '</td>';                       // 22.投保保司
+            html += '<td>' + item.customerService + '</td>';                      // 23.所属客服
+            html += '<td class="text-center"><button class="btn-action" onclick="window.location.href=\'claim-detail.html?policyNo=' + item.policyNo + '\'">查看赔付明细</button></td>'; // 24.操作
             html += '</tr>';
         });
         tbody.innerHTML = html;
@@ -332,39 +330,12 @@
         renderCurrentPage();
     }
 
-    // ============ 显示赔付明细 ============
-    function showClaimDetail(contractParty, policyNo) {
-        var item = claimData.find(function(d) {
-            return d.contractParty === contractParty && d.policies.length > 0 && d.policies[0].policyNo === policyNo;
-        });
-
-        if (!item) {
-            showToast('未找到赔付明细');
-            return;
-        }
-
-        var tbody = document.getElementById('claimDetailBody');
-        var html = '';
-        item.policies.forEach(function(p) {
-            html += '<tr>';
-            html += '<td>' + p.policyNo + '</td>';
-            html += '<td>' + p.insuredName + '</td>';
-            html += '<td>' + p.claimDate + '</td>';
-            html += '<td class="text-right">' + formatNumber(p.amount) + '</td>';
-            html += '<td>' + p.type + '</td>';
-            html += '<td>' + p.status + '</td>';
-            html += '</tr>';
-        });
-        tbody.innerHTML = html;
-        document.getElementById('claimDetailModalTitle').textContent = '赔付明细 - ' + contractParty + ' (' + policyNo + ')';
-        document.getElementById('claimDetailModal').classList.remove('hidden');
-    }
-
     // ============ 筛选逻辑 ============
     function filterData() {
         var contractParty = document.getElementById('filterContractParty').value.trim();
         var payer = document.getElementById('filterPayer').value.trim();
         var policyNo = document.getElementById('filterPolicyNo').value.trim();
+        var insuranceType = document.getElementById('filterInsuranceType').value;
         var rateRange = document.getElementById('filterRateRange').value;
 
         var filtered = claimData.slice();
@@ -381,15 +352,18 @@
 
         // 团单号筛选
         if (policyNo) {
-            filtered = filtered.filter(function(item) {
-                return item.policies.some(function(p) { return p.policyNo.indexOf(policyNo) !== -1; });
-            });
+            filtered = filtered.filter(function(item) { return item.policyNo.indexOf(policyNo) !== -1; });
         }
 
-        // 理赔率范围筛选
+        // 保险类型筛选
+        if (insuranceType !== 'all') {
+            filtered = filtered.filter(function(item) { return item.insuranceType === insuranceType; });
+        }
+
+        // 理赔率预警筛选（按预估满期理赔率）
         if (rateRange !== 'all') {
             filtered = filtered.filter(function(item) {
-                var rate = item.payablePremium > 0 ? (item.samePeriodClaim / item.payablePremium * 100) : 0;
+                var rate = item.estimatedExpiryClaimRate;
                 if (rateRange === 'normal') return rate < 70;
                 if (rateRange === 'warning') return rate >= 70 && rate < 80;
                 if (rateRange === 'danger') return rate >= 80;
@@ -409,9 +383,48 @@
             document.getElementById('filterContractParty').value = '';
             document.getElementById('filterPayer').value = '';
             document.getElementById('filterPolicyNo').value = '';
+            document.getElementById('filterInsuranceType').value = 'all';
             document.getElementById('filterRateRange').value = 'all';
             renderTable(claimData);
             showToast('已重置');
+        });
+
+        // 帮助图标tooltip定位逻辑
+        document.querySelectorAll('.help-icon').forEach(function(icon) {
+            icon.addEventListener('mouseenter', function() {
+                var tooltip = icon.querySelector('.help-tooltip');
+                if (!tooltip) return;
+                var iconRect = icon.getBoundingClientRect();
+                // 先显示以获取尺寸
+                tooltip.style.opacity = '1';
+                var tw = tooltip.offsetWidth;
+                var th = tooltip.offsetHeight;
+                var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+                var scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+                var vh = window.innerHeight;
+                var vw = window.innerWidth;
+                // 决定朝上还是朝下
+                var goUp = iconRect.top + scrollY - th - 10 < scrollY + 10;
+                var top, left;
+                tooltip.classList.remove('up', 'down');
+                if (goUp) {
+                    top = iconRect.bottom + scrollY + 8;
+                    tooltip.classList.add('down');
+                } else {
+                    top = iconRect.top + scrollY - th - 8;
+                    tooltip.classList.add('up');
+                }
+                // 水平居中，防止溢出
+                left = iconRect.left + scrollX + iconRect.width / 2 - tw / 2;
+                if (left + tw > scrollX + vw - 8) left = scrollX + vw - tw - 8;
+                if (left < scrollX + 8) left = scrollX + 8;
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            });
+            icon.addEventListener('mouseleave', function() {
+                var tooltip = icon.querySelector('.help-tooltip');
+                if (tooltip) tooltip.style.opacity = '0';
+            });
         });
 
         // 初始化渲染
