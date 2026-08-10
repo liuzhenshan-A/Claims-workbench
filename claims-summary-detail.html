@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据汇总明细</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f0f2f5;min-height:100vh;color:#333}
+.top-header{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:16px 32px;display:flex;justify-content:space-between;align-items:center}
+.top-title{font-size:20px;font-weight:600}
+.top-title::before{content:'📊';margin-right:8px}
+.btn-back{background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px;transition:all 0.2s}
+.btn-back:hover{background:rgba(255,255,255,0.3)}
+
+.container{max-width:1600px;margin:0 auto;padding:24px}
+
+.filter-bar{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;flex-wrap:wrap;align-items:center;gap:20px;margin-bottom:24px}
+.filter-item{display:flex;align-items:center;gap:8px}
+.filter-label{font-size:14px;color:#666;white-space:nowrap}
+.filter-select,.filter-input{padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;background:#fff;transition:border-color .2s}
+.filter-select:focus,.filter-input:focus{border-color:#667eea}
+.filter-actions{margin-left:auto;display:flex;gap:10px}
+.btn{padding:8px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{box-shadow:0 4px 12px rgba(102,126,234,.4);transform:translateY(-1px)}
+.btn-default{background:#fff;color:#666;border:1px solid #ddd}
+.btn-default:hover{background:#f5f5f5}
+
+.multi-select{position:relative;min-width:180px}
+.multi-select-trigger{padding:8px 36px 8px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;min-width:180px;position:relative;transition:border-color .2s}
+.multi-select-trigger:hover,.multi-select-trigger.active{border-color:#667eea}
+.multi-select-trigger::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#999;font-size:12px}
+.multi-select-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:240px;overflow-y:auto;display:none;z-index:100;margin-top:4px}
+.multi-select-dropdown.show{display:block}
+.multi-select-option{padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .15s;position:relative}
+.multi-select-option:hover{background:#f5f7fa}
+.multi-select-option.selected{background:#f0f5ff;color:#667eea;font-weight:500}
+.multi-select-option.selected::after{content:'✓';position:absolute;right:12px;color:#667eea;font-weight:bold}
+.multi-select-footer{padding:8px 12px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:13px}
+.multi-select-footer a{color:#667eea;cursor:pointer;text-decoration:none}
+
+.table-section{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.table-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.table-title{font-size:16px;font-weight:600;color:#333}
+.table-count{font-size:13px;color:#999}
+.table-wrapper{overflow-x:auto}
+.data-table{width:100%;min-width:2800px;border-collapse:collapse;font-size:13px}
+.data-table th{background:#f5f7fa;padding:12px 10px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #e8e8e8;white-space:nowrap}
+.data-table td{padding:12px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+.data-table tbody tr:nth-child(even) td{background:#fafbfc}
+.data-table tbody tr:hover td{background:#e6f4ff}
+.text-right{text-align:right}
+.text-center{text-align:center}
+.rate-high{color:#e74c3c;font-weight:600}
+.rate-warn{color:#f39c12;font-weight:600}
+.rate-normal{color:#52c41a;font-weight:600}
+.pagination{display:flex;justify-content:space-between;align-items:center;margin-top:20px;font-size:14px;color:#666}
+.pagination-info{color:#999}
+.pagination-controls{display:flex;gap:6px}
+.page-btn{padding:6px 12px;border:1px solid #ddd;background:#fff;cursor:pointer;border-radius:4px;font-size:13px}
+.page-btn:hover{border-color:#667eea;color:#667eea}
+.page-btn.active{background:#667eea;color:#fff;border-color:#667eea}
+.page-btn:disabled{opacity:.5;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <div class="top-title">数据汇总明细</div>
+  <button class="btn-back" onclick="history.back()">← 返回</button>
+</div>
+
+<div class="container">
+
+  <div class="filter-bar">
+    <div class="filter-item">
+      <span class="filter-label">理赔人员：</span>
+      <div class="multi-select" id="personMultiSelect">
+        <div class="multi-select-trigger" id="personTrigger">全部人员</div>
+        <div class="multi-select-dropdown" id="personDropdown">
+          <div class="multi-select-option" data-value="王昭雪"><span>王昭雪</span></div>
+          <div class="multi-select-option" data-value="李雪"><span>李雪</span></div>
+          <div class="multi-select-option" data-value="张建华"><span>张建华</span></div>
+          <div class="multi-select-option" data-value="李旭"><span>李旭</span></div>
+          <div class="multi-select-option" data-value="毛扬阳"><span>毛扬阳</span></div>
+          <div class="multi-select-footer"><a id="selectAllLink">全选</a><a id="clearAllLink">清空</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="filter-item">
+      <span class="filter-label">所属保司：</span>
+      <select id="company" class="filter-select">
+        <option value="all">全部保司</option>
+        <option value="picc">中国人民财产保险</option>
+        <option value="pingan">平安健康保险</option>
+        <option value="zhongan">众安在线财产保险</option>
+        <option value="cpic">太平洋健康保险</option>
+        <option value="taikang">泰康健康保险</option>
+      </select>
+    </div>
+
+    <div class="filter-item">
+      <span class="filter-label">团单号：</span>
+      <input type="text" id="policyNo" class="filter-input" placeholder="请输入团单号">
+    </div>
+
+    <div class="filter-item">
+      <span class="filter-label">年份：</span>
+      <select id="year" class="filter-select">
+        <option value="all">全部年份</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-primary" id="queryBtn">🔍 查询</button>
+      <button class="btn btn-default" id="resetBtn">↺ 重置</button>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <div class="table-header">
+      <div class="table-title">汇总明细列表</div>
+      <div class="table-count" id="tableCount">共 0 条记录</div>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table" id="dataTable">
+        <thead>
+          <tr>
+            <th style="width:50px">序号</th>
+            <th>年份</th>
+            <th>团单号</th>
+            <th>保司</th>
+            <th>付款方名称</th>
+            <th>所属客服</th>
+            <th>合同起期</th>
+            <th>合同止期</th>
+            <th>新续标签</th>
+            <th>缴费方式</th>
+            <th>被保人数</th>
+            <th>账单月</th>
+            <th class="text-right">保费应收</th>
+            <th class="text-right">保费应支</th>
+            <th class="text-right">医疗预估满期应收</th>
+            <th class="text-right">医疗预估满期应支</th>
+            <th class="text-right">医疗预估满期赔款</th>
+            <th class="text-right">医疗预估满期赔付率</th>
+            <th class="text-right">医疗已决案件数</th>
+            <th class="text-right">医疗已决赔款</th>
+            <th class="text-right">医疗未决案件数</th>
+            <th class="text-right">医疗未决赔款</th>
+            <th class="text-right">医疗实际理赔率</th>
+            <th class="text-right">医疗满期理赔率</th>
+            <th class="text-right">医疗实际满期理赔率</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <div class="pagination-info" id="paginationInfo">共 0 条，第 1/1 页</div>
+      <div class="pagination-controls" id="paginationControls"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const companyMap={
+  'picc':'中国人民财产保险股份有限公司',
+  'pingan':'平安健康保险股份有限公司',
+  'zhongan':'众安在线财产保险股份有限公司',
+  'cpic':'太平洋健康保险股份有限公司',
+  'taikang':'泰康健康保险股份有限公司'
+};
+
+const personGroups={
+  '王昭雪':{cs:'金泯含'},
+  '李雪':{cs:'韩笑'},
+  '张建华':{cs:'韩笑'},
+  '李旭':{cs:'丛洋洋'},
+  '毛扬阳':{cs:'刘胐朏'}
+};
+
+const allData=[
+  {idx:1,year:2026,policyNo:'POL20260101001',contractParty:'中国人民财产保险股份有限公司',payer:'支付宝（中国）网络技术有限公司',csName:'金泯含',startDate:'2026-01-01',endDate:'2026-12-31',newRenew:'新单',payMethod:'年缴',insuredCount:1256,billMonth:'2026-01',premiumReceivable:28656432.50,payablePremium:28656432.50,medicalEstExpiryReceivable:25423890.00,medicalEstExpiryPayable:25423890.00,medicalEstExpiryClaim:19067917.50,medicalEstExpiryClaimRate:75.00,medicalSettledCount:856,medicalSettledClaim:15234567.80,medicalUnsettledCount:120,medicalUnsettledClaim:3833356.58,medicalActualClaimRate:75.00,medicalExpiryClaimRate:75.00,medicalActualExpiryClaimRate:75.00},
+  {idx:2,year:2026,policyNo:'POL20260215001',contractParty:'平安健康保险股份有限公司',payer:'微信支付',csName:'韩笑',startDate:'2026-02-15',endDate:'2027-02-14',newRenew:'新单',payMethod:'月缴',insuredCount:892,billMonth:'2026-02',premiumReceivable:18235680.00,payablePremium:16235680.00,medicalEstExpiryReceivable:15234567.00,medicalEstExpiryPayable:15234567.00,medicalEstExpiryClaim:12498384.94,medicalEstExpiryClaimRate:82.00,medicalSettledCount:634,medicalSettledClaim:10123456.78,medicalUnsettledCount:85,medicalUnsettledClaim:2374920.82,medicalActualClaimRate:82.00,medicalExpiryClaimRate:82.00,medicalActualExpiryClaimRate:82.00},
+  {idx:3,year:2026,policyNo:'POL20260301001',contractParty:'众安在线财产保险股份有限公司',payer:'支付宝（中国）网络技术有限公司',csName:'丛洋洋',startDate:'2026-03-01',endDate:'2027-02-28',newRenew:'新单',payMethod:'半年缴',insuredCount:634,billMonth:'2026-03',premiumReceivable:12856920.00,payablePremium:11856920.00,medicalEstExpiryReceivable:10230000.00,medicalEstExpiryPayable:10230000.00,medicalEstExpiryClaim:7168023.40,medicalEstExpiryClaimRate:70.01,medicalSettledCount:423,medicalSettledClaim:5423456.78,medicalUnsettledCount:56,medicalUnsettledClaim:1744566.62,medicalActualClaimRate:70.01,medicalExpiryClaimRate:70.01,medicalActualExpiryClaimRate:70.01},
+  {idx:4,year:2026,policyNo:'POL20260310001',contractParty:'太平洋健康保险股份有限公司',payer:'银联商务',csName:'刘胐朏',startDate:'2026-03-10',endDate:'2027-03-09',newRenew:'新单',payMethod:'季缴',insuredCount:425,billMonth:'2026-03',premiumReceivable:9956430.00,payablePremium:8456430.00,medicalEstExpiryReceivable:7120000.00,medicalEstExpiryPayable:7120000.00,medicalEstExpiryClaim:5838400.00,medicalEstExpiryClaimRate:82.00,medicalSettledCount:298,medicalSettledClaim:4523456.78,medicalUnsettledCount:42,medicalUnsettledClaim:1314943.22,medicalActualClaimRate:82.00,medicalExpiryClaimRate:82.00,medicalActualExpiryClaimRate:82.00},
+  {idx:5,year:2026,policyNo:'POL20260401001',contractParty:'泰康健康保险股份有限公司',payer:'支付宝（中国）网络技术有限公司',csName:'金泯含',startDate:'2026-04-01',endDate:'2027-03-31',newRenew:'续保',payMethod:'年缴',insuredCount:312,billMonth:'2026-04',premiumReceivable:6823450.00,payablePremium:6523450.00,medicalEstExpiryReceivable:5450000.00,medicalEstExpiryPayable:5450000.00,medicalEstExpiryClaim:3815000.00,medicalEstExpiryClaimRate:70.00,medicalSettledCount:198,medicalSettledClaim:2923456.78,medicalUnsettledCount:28,medicalUnsettledClaim:891543.22,medicalActualClaimRate:70.00,medicalExpiryClaimRate:70.00,medicalActualExpiryClaimRate:70.00},
+  {idx:6,year:2026,policyNo:'POL20260501001',contractParty:'平安健康保险股份有限公司',payer:'微信支付',csName:'韩笑',startDate:'2026-05-01',endDate:'2027-04-30',newRenew:'新单',payMethod:'月缴',insuredCount:756,billMonth:'2026-05',premiumReceivable:10500000.00,payablePremium:9500000.00,medicalEstExpiryReceivable:8200000.00,medicalEstExpiryPayable:8200000.00,medicalEstExpiryClaim:6640000.00,medicalEstExpiryClaimRate:81.00,medicalSettledCount:456,medicalSettledClaim:5123456.78,medicalUnsettledCount:68,medicalUnsettledClaim:1516543.22,medicalActualClaimRate:81.00,medicalExpiryClaimRate:81.00,medicalActualExpiryClaimRate:81.00},
+  {idx:7,year:2025,policyNo:'POL20250601001',contractParty:'中国人民财产保险股份有限公司',payer:'支付宝（中国）网络技术有限公司',csName:'韩笑',startDate:'2025-06-01',endDate:'2026-05-31',newRenew:'续保',payMethod:'年缴',insuredCount:980,billMonth:'2025-06',premiumReceivable:22656432.50,payablePremium:22656432.50,medicalEstExpiryReceivable:20423890.00,medicalEstExpiryPayable:20423890.00,medicalEstExpiryClaim:14296717.50,medicalEstExpiryClaimRate:70.00,medicalSettledCount:656,medicalSettledClaim:11523456.78,medicalUnsettledCount:98,medicalUnsettledClaim:2773260.72,medicalActualClaimRate:70.00,medicalExpiryClaimRate:70.00,medicalActualExpiryClaimRate:70.00},
+  {idx:8,year:2025,policyNo:'POL20250701001',contractParty:'众安在线财产保险股份有限公司',payer:'支付宝（中国）网络技术有限公司',csName:'丛洋洋',startDate:'2025-07-01',endDate:'2026-06-30',newRenew:'新单',payMethod:'月缴',insuredCount:456,billMonth:'2025-07',premiumReceivable:8856920.00,payablePremium:7856920.00,medicalEstExpiryReceivable:6230000.00,medicalEstExpiryPayable:6230000.00,medicalEstExpiryClaim:4361000.00,medicalEstExpiryClaimRate:70.01,medicalSettledCount:289,medicalSettledClaim:3423456.78,medicalUnsettledCount:38,medicalUnsettledClaim:937543.22,medicalActualClaimRate:70.01,medicalExpiryClaimRate:70.01,medicalActualExpiryClaimRate:70.01}
+];
+
+var selectedPersons=[];
+var currentPage=1;
+var pageSize=10;
+var filteredData=[];
+
+function fmt(n){if(n===0)return'-';return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+
+function getRateClass(rate){return rate>=80?'rate-high':rate>=70?'rate-warn':'rate-normal'}
+function rateText(rate){return '<span class="'+getRateClass(rate)+'">'+rate.toFixed(2)+'%</span>'}
+
+function getQueryParam(name){var p=new URLSearchParams(window.location.search);return p.get(name)}
+
+function initFromUrl(){
+  var ps=getQueryParam('persons');
+  if(ps){selectedPersons=ps.split(',')}
+  var co=getQueryParam('company');
+  if(co&&co!=='all'){document.getElementById('company').value=co}
+}
+
+function initMultiSelect(){
+  var trigger=document.getElementById('personTrigger');
+  var dropdown=document.getElementById('personDropdown');
+  var opts=dropdown.querySelectorAll('.multi-select-option');
+  trigger.addEventListener('click',function(e){e.stopPropagation();dropdown.classList.toggle('show');trigger.classList.toggle('active')});
+  document.addEventListener('click',function(e){if(!document.getElementById('personMultiSelect').contains(e.target)){dropdown.classList.remove('show');trigger.classList.remove('active')}});
+  opts.forEach(function(opt){
+    opt.addEventListener('click',function(e){
+      e.stopPropagation();
+      var v=opt.getAttribute('data-value');
+      var i=selectedPersons.indexOf(v);
+      if(i===-1){selectedPersons.push(v);opt.classList.add('selected')}
+      else{selectedPersons.splice(i,1);opt.classList.remove('selected')}
+      updateTriggerText();
+    });
+  });
+  document.getElementById('selectAllLink').addEventListener('click',function(e){
+    e.stopPropagation();
+    opts.forEach(function(opt){
+      var v=opt.getAttribute('data-value');
+      opt.classList.add('selected');
+      if(selectedPersons.indexOf(v)===-1)selectedPersons.push(v);
+    });
+    updateTriggerText();
+  });
+  document.getElementById('clearAllLink').addEventListener('click',function(e){
+    e.stopPropagation();
+    opts.forEach(function(opt){opt.classList.remove('selected')});
+    selectedPersons=[];
+    updateTriggerText();
+  });
+}
+
+function updateTriggerText(){
+  var t=document.getElementById('personTrigger');
+  if(selectedPersons.length===0)t.textContent='全部人员';
+  else if(selectedPersons.length<=2)t.textContent=selectedPersons.join('、');
+  else t.textContent='已选 '+selectedPersons.length+' 人';
+}
+
+function applyFilters(){
+  var company=document.getElementById('company').value;
+  var pn=document.getElementById('policyNo').value.trim();
+  var yr=document.getElementById('year').value;
+  filteredData=allData.slice();
+  if(selectedPersons.length>0)filteredData=filteredData.filter(function(it){return selectedPersons.indexOf(it.customerService)!==-1});
+  if(company!=='all')filteredData=filteredData.filter(function(it){return it.contractParty===companyMap[company]});
+  if(pn)filteredData=filteredData.filter(function(it){return it.policyNo.indexOf(pn)!==-1});
+  if(yr!=='all')filteredData=filteredData.filter(function(it){return String(it.year)===yr});
+  currentPage=1;
+  renderTable();
+}
+
+function renderTable(){
+  var total=filteredData.length;
+  var totalPages=Math.max(1,Math.ceil(total/pageSize));
+  if(currentPage>totalPages)currentPage=totalPages;
+  var start=(currentPage-1)*pageSize;
+  var pageData=filteredData.slice(start,start+pageSize);
+  var tbody=document.getElementById('tableBody');
+  if(pageData.length===0){tbody.innerHTML='<tr><td colspan="25" style="text-align:center;padding:60px;color:#999">📭 暂无数据</td></tr>'}
+  else{
+    var h='';
+    pageData.forEach(function(it,i){
+      var seq=start+i+1;
+      h+='<tr>';
+      h+='<td>'+seq+'</td>';
+      h+='<td>'+it.year+'</td>';
+      h+='<td>'+it.policyNo+'</td>';
+      h+='<td>'+it.contractParty+'</td>';
+      h+='<td>'+it.payer+'</td>';
+      h+='<td>'+it.csName+'</td>';
+      h+='<td>'+it.startDate+'</td>';
+      h+='<td>'+it.endDate+'</td>';
+      h+='<td>'+it.newRenew+'</td>';
+      h+='<td>'+it.payMethod+'</td>';
+      h+='<td class="text-right">'+it.insuredCount+'</td>';
+      h+='<td>'+it.billMonth+'</td>';
+      h+='<td class="text-right">'+fmt(it.premiumReceivable)+'</td>';
+      h+='<td class="text-right">'+fmt(it.payablePremium)+'</td>';
+      h+='<td class="text-right">'+fmt(it.medicalEstExpiryReceivable)+'</td>';
+      h+='<td class="text-right">'+fmt(it.medicalEstExpiryPayable)+'</td>';
+      h+='<td class="text-right">'+fmt(it.medicalEstExpiryClaim)+'</td>';
+      h+='<td class="text-right">'+rateText(it.medicalEstExpiryClaimRate)+'</td>';
+      h+='<td class="text-right">'+it.medicalSettledCount+'</td>';
+      h+='<td class="text-right">'+fmt(it.medicalSettledClaim)+'</td>';
+      h+='<td class="text-right">'+it.medicalUnsettledCount+'</td>';
+      h+='<td class="text-right">'+fmt(it.medicalUnsettledClaim)+'</td>';
+      h+='<td class="text-right">'+rateText(it.medicalActualClaimRate)+'</td>';
+      h+='<td class="text-right">'+rateText(it.medicalExpiryClaimRate)+'</td>';
+      h+='<td class="text-right">'+rateText(it.medicalActualExpiryClaimRate)+'</td>';
+      h+='</tr>';
+    });
+    tbody.innerHTML=h;
+  }
+  document.getElementById('tableCount').textContent='共 '+total+' 条记录';
+  document.getElementById('paginationInfo').textContent='共 '+total+' 条，第 '+currentPage+'/'+totalPages+' 页';
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages){
+  var c=document.getElementById('paginationControls');
+  var h='';
+  h+='<button class="page-btn" '+(currentPage===1?'disabled':'')+'>上一页</button>';
+  for(var i=1;i<=totalPages;i++){
+    if(i===1||i===totalPages||Math.abs(i-currentPage)<=1){
+      h+='<button class="page-btn '+(i===currentPage?'active':'')+'" data-page="'+i+'">'+i+'</button>';
+    }else if(i===currentPage-2||i===currentPage+2){h+='<span>...</span>'}
+  }
+  h+='<button class="page-btn" '+(currentPage===totalPages?'disabled':'')+'>下一页</button>';
+  c.innerHTML=h;
+  c.querySelectorAll('.page-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(btn.textContent==='上一页'){currentPage=Math.max(1,currentPage-1)}
+      else if(btn.textContent==='下一页'){currentPage=Math.min(totalPages,currentPage+1)}
+      else{currentPage=parseInt(btn.dataset.page)}
+      renderTable();
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  initFromUrl();
+  initMultiSelect();
+  updateTriggerText();
+  applyFilters();
+  document.getElementById('queryBtn').addEventListener('click',applyFilters);
+  document.getElementById('resetBtn').addEventListener('click',function(){
+    selectedPersons=[];
+    document.querySelectorAll('#personDropdown .multi-select-option').forEach(function(o){o.classList.remove('selected')});
+    document.getElementById('company').value='all';
+    document.getElementById('policyNo').value='';
+    document.getElementById('year').value='all';
+    updateTriggerText();
+    applyFilters();
+  });
+});
+</script>
+</body>
+</html>

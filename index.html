@@ -100,6 +100,20 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .btn-sm{padding:10px 18px;font-size:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .2s}
 .btn-sm:hover{box-shadow:0 4px 12px rgba(102,126,234,.4);transform:translateY(-1px)}
 
+/* Summary */
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.summary-card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:3px solid #667eea;transition:transform .2s}
+.summary-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.summary-card .sc-label{font-size:12px;color:#888;margin-bottom:6px}
+.summary-card .sc-value{font-size:22px;font-weight:600;color:#333}
+.summary-card .sc-sub{font-size:11px;color:#aaa;margin-top:4px}
+.summary-card.blue{border-left-color:#667eea}
+.summary-card.green{border-left-color:#52c41a}
+.summary-card.orange{border-left-color:#faad14}
+.summary-card.red{border-left-color:#ff4d4f}
+.summary-card.purple{border-left-color:#722ed1}
+.summary-card.cyan{border-left-color:#13c2c2}
+
 .empty-state{text-align:center;padding:60px 20px;color:#999}
 .hidden{display:none !important}
 .toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:1000}
@@ -206,6 +220,14 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
     </div>
   </div>
 
+  <!-- 数据汇总 -->
+  <div class="section-header">
+    <h2 class="section-title">📈 数据汇总 <span class="help-icon" data-tip="按当前查询条件汇总的团单数据概览，点击查看明细可跳转至详细列表">?</span></h2>
+    <button class="btn btn-primary" id="viewDetailBtn">📋 查看明细</button>
+  </div>
+
+  <div class="summary-cards" id="summaryCards"></div>
+
   <!-- 预警 -->
   <div class="section-header">
     <h2 class="section-title">⚠️ 理赔率预警 <span class="help-icon" data-tip="按客服维度汇总负责的团单，理赔率≥70%黄色预警，≥80%红色预警">?</span></h2>
@@ -237,12 +259,12 @@ const companyMap = {
 };
 
 const claimData = [
-  { contractParty: '中国人民财产保险股份有限公司', payablePremium: 28656432.50, samePeriodClaim: 21492324.38, customerService: '王昭雪' },
-  { contractParty: '平安健康保险股份有限公司', payablePremium: 16235680.00, samePeriodClaim: 13313257.60, customerService: '李雪' },
-  { contractParty: '众安在线财产保险股份有限公司', payablePremium: 11856920.00, samePeriodClaim: 8300844.00, customerService: '李旭' },
-  { contractParty: '太平洋健康保险股份有限公司', payablePremium: 8456430.00, samePeriodClaim: 6934272.60, customerService: '毛扬阳' },
-  { contractParty: '泰康健康保险股份有限公司', payablePremium: 6523450.00, samePeriodClaim: 4566415.00, customerService: '王昭雪' },
-  { contractParty: '平安健康保险股份有限公司', payablePremium: 9500000.00, samePeriodClaim: 7600000.00, customerService: '张建华' }
+  { contractParty: '中国人民财产保险股份有限公司', payablePremium: 28656432.50, samePeriodClaim: 21492324.38, customerService: '王昭雪', policyNo: 'POL20260101001', year: 2026, payer: '支付宝（中国）网络技术有限公司', csName: '金泯含', startDate: '2026-01-01', endDate: '2026-12-31', newRenew: '新单', payMethod: '年缴', insuredCount: 1256, billMonth: '2026-01', premiumReceivable: 28656432.50, medicalEstExpiryReceivable: 25423890.00, medicalEstExpiryPayable: 25423890.00, medicalEstExpiryClaim: 19067917.50, medicalEstExpiryClaimRate: 75.00, medicalSettledCount: 856, medicalSettledClaim: 15234567.80, medicalUnsettledCount: 120, medicalUnsettledClaim: 3833356.58, medicalActualClaimRate: 75.00, medicalExpiryClaimRate: 75.00, medicalActualExpiryClaimRate: 75.00 },
+  { contractParty: '平安健康保险股份有限公司', payablePremium: 16235680.00, samePeriodClaim: 13313257.60, customerService: '李雪', policyNo: 'POL20260215001', year: 2026, payer: '微信支付', csName: '韩笑', startDate: '2026-02-15', endDate: '2027-02-14', newRenew: '新单', payMethod: '月缴', insuredCount: 892, billMonth: '2026-02', premiumReceivable: 18235680.00, medicalEstExpiryReceivable: 15234567.00, medicalEstExpiryPayable: 15234567.00, medicalEstExpiryClaim: 12498384.94, medicalEstExpiryClaimRate: 82.00, medicalSettledCount: 634, medicalSettledClaim: 10123456.78, medicalUnsettledCount: 85, medicalUnsettledClaim: 2374920.82, medicalActualClaimRate: 82.00, medicalExpiryClaimRate: 82.00, medicalActualExpiryClaimRate: 82.00 },
+  { contractParty: '众安在线财产保险股份有限公司', payablePremium: 11856920.00, samePeriodClaim: 8300844.00, customerService: '李旭', policyNo: 'POL20260301001', year: 2026, payer: '支付宝（中国）网络技术有限公司', csName: '丛洋洋', startDate: '2026-03-01', endDate: '2027-02-28', newRenew: '新单', payMethod: '半年缴', insuredCount: 634, billMonth: '2026-03', premiumReceivable: 12856920.00, medicalEstExpiryReceivable: 10230000.00, medicalEstExpiryPayable: 10230000.00, medicalEstExpiryClaim: 7168023.40, medicalEstExpiryClaimRate: 70.01, medicalSettledCount: 423, medicalSettledClaim: 5423456.78, medicalUnsettledCount: 56, medicalUnsettledClaim: 1744566.62, medicalActualClaimRate: 70.01, medicalExpiryClaimRate: 70.01, medicalActualExpiryClaimRate: 70.01 },
+  { contractParty: '太平洋健康保险股份有限公司', payablePremium: 8456430.00, samePeriodClaim: 6934272.60, customerService: '毛扬阳', policyNo: 'POL20260310001', year: 2026, payer: '银联商务', csName: '刘胐朏', startDate: '2026-03-10', endDate: '2027-03-09', newRenew: '新单', payMethod: '季缴', insuredCount: 425, billMonth: '2026-03', premiumReceivable: 9956430.00, medicalEstExpiryReceivable: 7120000.00, medicalEstExpiryPayable: 7120000.00, medicalEstExpiryClaim: 5838400.00, medicalEstExpiryClaimRate: 82.00, medicalSettledCount: 298, medicalSettledClaim: 4523456.78, medicalUnsettledCount: 42, medicalUnsettledClaim: 1314943.22, medicalActualClaimRate: 82.00, medicalExpiryClaimRate: 82.00, medicalActualExpiryClaimRate: 82.00 },
+  { contractParty: '泰康健康保险股份有限公司', payablePremium: 6523450.00, samePeriodClaim: 4566415.00, customerService: '王昭雪', policyNo: 'POL20260401001', year: 2026, payer: '支付宝（中国）网络技术有限公司', csName: '金泯含', startDate: '2026-04-01', endDate: '2027-03-31', newRenew: '续保', payMethod: '年缴', insuredCount: 312, billMonth: '2026-04', premiumReceivable: 6823450.00, medicalEstExpiryReceivable: 5450000.00, medicalEstExpiryPayable: 5450000.00, medicalEstExpiryClaim: 3815000.00, medicalEstExpiryClaimRate: 70.00, medicalSettledCount: 198, medicalSettledClaim: 2923456.78, medicalUnsettledCount: 28, medicalUnsettledClaim: 891543.22, medicalActualClaimRate: 70.00, medicalExpiryClaimRate: 70.00, medicalActualExpiryClaimRate: 70.00 },
+  { contractParty: '平安健康保险股份有限公司', payablePremium: 9500000.00, samePeriodClaim: 7600000.00, customerService: '张建华', policyNo: 'POL20260501001', year: 2026, payer: '微信支付', csName: '韩笑', startDate: '2026-05-01', endDate: '2027-04-30', newRenew: '新单', payMethod: '月缴', insuredCount: 756, billMonth: '2026-05', premiumReceivable: 10500000.00, medicalEstExpiryReceivable: 8200000.00, medicalEstExpiryPayable: 8200000.00, medicalEstExpiryClaim: 6640000.00, medicalEstExpiryClaimRate: 81.00, medicalSettledCount: 456, medicalSettledClaim: 5123456.78, medicalUnsettledCount: 68, medicalUnsettledClaim: 1516543.22, medicalActualClaimRate: 81.00, medicalExpiryClaimRate: 81.00, medicalActualExpiryClaimRate: 81.00 }
 ];
 
 // 工具函数
@@ -363,6 +385,53 @@ function renderAlerts(data){
 
 function goList(cs){window.location.href='group-policy-list.html?cs='+encodeURIComponent(cs)}
 
+// Summary
+function renderSummary(data){
+  var cards=document.getElementById('summaryCards');
+  if(!data.length){cards.innerHTML='<div class="empty-state" style="grid-column:1/-1">📭 暂无数据</div>';return}
+  var totalPolicies=data.length;
+  var totalPremium=0,totalReceivable=0,totalPayable=0,totalClaim=0,totalSettledClaim=0,totalUnsettledClaim=0;
+  var totalSettledCount=0,totalUnsettledCount=0,totalInsured=0;
+  var sumEstRate=0;
+  data.forEach(function(it){
+    totalPremium+=it.payablePremium;
+    totalReceivable+=it.premiumReceivable;
+    totalPayable+=it.medicalEstExpiryPayable;
+    totalClaim+=it.medicalEstExpiryClaim;
+    totalSettledClaim+=it.medicalSettledClaim;
+    totalUnsettledClaim+=it.medicalUnsettledClaim;
+    totalSettledCount+=it.medicalSettledCount;
+    totalUnsettledCount+=it.medicalUnsettledCount;
+    totalInsured+=it.insuredCount;
+    sumEstRate+=it.medicalEstExpiryClaimRate;
+  });
+  var avgEstRate=sumEstRate/data.length;
+  var h='';
+  h+='<div class="summary-card blue"><div class="sc-label">团单数量</div><div class="sc-value">'+totalPolicies+'</div><div class="sc-sub">个有效团单</div></div>';
+  h+='<div class="summary-card cyan"><div class="sc-label">保费应收合计</div><div class="sc-value">¥'+fmt(totalReceivable)+'</div><div class="sc-sub">所有团单应收</div></div>';
+  h+='<div class="summary-card cyan"><div class="sc-label">保费应支合计</div><div class="sc-value">¥'+fmt(totalPremium)+'</div><div class="sc-sub">所有团单应支</div></div>';
+  h+='<div class="summary-card orange"><div class="sc-label">预估满期赔款</div><div class="sc-value">¥'+fmt(totalClaim)+'</div><div class="sc-sub">按预估满期计算</div></div>';
+  h+='<div class="summary-card orange"><div class="sc-label">预估满期理赔率</div><div class="sc-value">'+avgEstRate.toFixed(2)+'%</div><div class="sc-sub">平均理赔率</div></div>';
+  h+='<div class="summary-card green"><div class="sc-label">已决案件数</div><div class="sc-value">'+totalSettledCount+'</div><div class="sc-sub">已处理案件</div></div>';
+  h+='<div class="summary-card green"><div class="sc-label">已决赔款</div><div class="sc-value">¥'+fmt(totalSettledClaim)+'</div><div class="sc-sub">已赔付金额</div></div>';
+  h+='<div class="summary-card purple"><div class="sc-label">未决案件数</div><div class="sc-value">'+totalUnsettledCount+'</div><div class="sc-sub">待处理案件</div></div>';
+  h+='<div class="summary-card purple"><div class="sc-label">未决赔款</div><div class="sc-value">¥'+fmt(totalUnsettledClaim)+'</div><div class="sc-sub">待赔付金额</div></div>';
+  h+='<div class="summary-card red"><div class="sc-label">在保人数</div><div class="sc-value">'+totalInsured.toLocaleString()+'</div><div class="sc-sub">累计在保</div></div>';
+  cards.innerHTML=h;
+}
+
+function goSummaryDetail(){
+  var params=[];
+  if(selectedPersons.length>0)params.push('persons='+encodeURIComponent(selectedPersons.join(',')));
+  var company=document.getElementById('company').value;
+  if(company!=='all')params.push('company='+company);
+  var sd=document.getElementById('startDate').value;
+  var ed=document.getElementById('endDate').value;
+  if(sd)params.push('start='+sd);
+  if(ed)params.push('end='+ed);
+  window.location.href='claims-summary-detail.html'+(params.length?'?'+params.join('&'):'');
+}
+
 // 筛选
 function filterData(){
   var company=document.getElementById('company').value;
@@ -370,6 +439,7 @@ function filterData(){
   if(selectedPersons.length>0)filtered=filtered.filter(function(it){return selectedPersons.indexOf(it.customerService)!==-1});
   if(company!=='all')filtered=filtered.filter(function(it){return it.contractParty===companyMap[company]});
   renderDashboard(filtered);
+  renderSummary(filtered);
   renderAlerts(filtered);
   toast('查询完成');
 }
@@ -384,17 +454,20 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('endDate').value=ey;
   document.getElementById('dataDate').textContent=today;
   document.getElementById('queryBtn').addEventListener('click',filterData);
+  document.getElementById('viewDetailBtn').addEventListener('click',goSummaryDetail);
   document.getElementById('resetBtn').addEventListener('click',function(){
     resetMultiSelect();
     document.getElementById('company').value='all';
     document.getElementById('startDate').value=sy;
     document.getElementById('endDate').value=ey;
     renderDashboard(claimData);
+    renderSummary(claimData);
     renderAlerts(claimData);
     toast('已重置');
   });
   initMultiSelect();
   renderDashboard(claimData);
+  renderSummary(claimData);
   renderAlerts(claimData);
 });
 </script>
