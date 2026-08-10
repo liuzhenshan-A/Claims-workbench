@@ -100,19 +100,22 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .btn-sm{padding:10px 18px;font-size:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:all .2s}
 .btn-sm:hover{box-shadow:0 4px 12px rgba(102,126,234,.4);transform:translateY(-1px)}
 
-/* Summary */
-.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
-.summary-card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:3px solid #667eea;transition:transform .2s}
-.summary-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.08)}
-.summary-card .sc-label{font-size:12px;color:#888;margin-bottom:6px}
-.summary-card .sc-value{font-size:22px;font-weight:600;color:#333}
-.summary-card .sc-sub{font-size:11px;color:#aaa;margin-top:4px}
-.summary-card.blue{border-left-color:#667eea}
-.summary-card.green{border-left-color:#52c41a}
-.summary-card.orange{border-left-color:#faad14}
-.summary-card.red{border-left-color:#ff4d4f}
-.summary-card.purple{border-left-color:#722ed1}
-.summary-card.cyan{border-left-color:#13c2c2}
+/* Summary KPI */
+.summary-kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:20px}
+.skpi-card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-top:3px solid #667eea;text-align:center}
+.skpi-card.green{border-top-color:#52c41a}
+.skpi-card.orange{border-top-color:#faad14}
+.skpi-card.red{border-top-color:#ff4d4f}
+.skpi-card.cyan{border-top-color:#13c2c2}
+.skpi-label{font-size:13px;color:#888;margin-bottom:8px}
+.skpi-value{font-size:26px;font-weight:600;color:#333}
+.skpi-unit{font-size:13px;color:#aaa;font-weight:normal;margin-left:2px}
+
+/* Charts */
+.charts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.chart-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.chart-title{font-size:14px;font-weight:600;color:#333;margin-bottom:12px;padding-left:10px;border-left:3px solid #667eea}
+.chart-box{width:100%;height:260px}
 
 .empty-state{text-align:center;padding:60px 20px;color:#999}
 .hidden{display:none !important}
@@ -222,11 +225,30 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 
   <!-- 数据汇总 -->
   <div class="section-header">
-    <h2 class="section-title">📈 数据汇总 <span class="help-icon" data-tip="按当前查询条件汇总的团单数据概览，点击查看明细可跳转至详细列表">?</span></h2>
+    <h2 class="section-title">📈 数据汇总 <span class="help-icon" data-tip="按当前查询条件汇总的可统计数据（不含预估类数据），点击查看明细可跳转至详细列表">?</span></h2>
     <button class="btn btn-primary" id="viewDetailBtn">📋 查看明细</button>
   </div>
 
-  <div class="summary-cards" id="summaryCards"></div>
+  <div class="summary-kpi" id="summaryKpi"></div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">各保司案件数分布</div>
+      <div id="chartCases" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">各保司赔款金额对比</div>
+      <div id="chartClaim" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">各保司在保人数</div>
+      <div id="chartInsured" class="chart-box"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">案件状态占比</div>
+      <div id="chartStatus" class="chart-box"></div>
+    </div>
+  </div>
 
   <!-- 预警 -->
   <div class="section-header">
@@ -240,6 +262,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 
 <div class="toast hidden" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script>
 // 数据配置
 const personGroups = {
@@ -385,39 +408,116 @@ function renderAlerts(data){
 
 function goList(cs){window.location.href='group-policy-list.html?cs='+encodeURIComponent(cs)}
 
-// Summary
+// Summary with charts
+var chartInstances={};
 function renderSummary(data){
-  var cards=document.getElementById('summaryCards');
-  if(!data.length){cards.innerHTML='<div class="empty-state" style="grid-column:1/-1">📭 暂无数据</div>';return}
-  var totalPolicies=data.length;
-  var totalPremium=0,totalReceivable=0,totalPayable=0,totalClaim=0,totalSettledClaim=0,totalUnsettledClaim=0;
-  var totalSettledCount=0,totalUnsettledCount=0,totalInsured=0;
-  var sumEstRate=0;
+  renderSummaryKpi(data);
+  renderSummaryCharts(data);
+}
+
+function renderSummaryKpi(data){
+  var box=document.getElementById('summaryKpi');
+  if(!data.length){box.innerHTML='';return}
+  var totalSettledCount=0,totalUnsettledCount=0,totalSettledClaim=0,totalUnsettledClaim=0,totalInsured=0;
   data.forEach(function(it){
-    totalPremium+=it.payablePremium;
-    totalReceivable+=it.premiumReceivable;
-    totalPayable+=it.medicalEstExpiryPayable;
-    totalClaim+=it.medicalEstExpiryClaim;
-    totalSettledClaim+=it.medicalSettledClaim;
-    totalUnsettledClaim+=it.medicalUnsettledClaim;
     totalSettledCount+=it.medicalSettledCount;
     totalUnsettledCount+=it.medicalUnsettledCount;
+    totalSettledClaim+=it.medicalSettledClaim;
+    totalUnsettledClaim+=it.medicalUnsettledClaim;
     totalInsured+=it.insuredCount;
-    sumEstRate+=it.medicalEstExpiryClaimRate;
   });
-  var avgEstRate=sumEstRate/data.length;
   var h='';
-  h+='<div class="summary-card blue"><div class="sc-label">团单数量</div><div class="sc-value">'+totalPolicies+'</div><div class="sc-sub">个有效团单</div></div>';
-  h+='<div class="summary-card cyan"><div class="sc-label">保费应收合计</div><div class="sc-value">¥'+fmt(totalReceivable)+'</div><div class="sc-sub">所有团单应收</div></div>';
-  h+='<div class="summary-card cyan"><div class="sc-label">保费应支合计</div><div class="sc-value">¥'+fmt(totalPremium)+'</div><div class="sc-sub">所有团单应支</div></div>';
-  h+='<div class="summary-card orange"><div class="sc-label">预估满期赔款</div><div class="sc-value">¥'+fmt(totalClaim)+'</div><div class="sc-sub">按预估满期计算</div></div>';
-  h+='<div class="summary-card orange"><div class="sc-label">预估满期理赔率</div><div class="sc-value">'+avgEstRate.toFixed(2)+'%</div><div class="sc-sub">平均理赔率</div></div>';
-  h+='<div class="summary-card green"><div class="sc-label">已决案件数</div><div class="sc-value">'+totalSettledCount+'</div><div class="sc-sub">已处理案件</div></div>';
-  h+='<div class="summary-card green"><div class="sc-label">已决赔款</div><div class="sc-value">¥'+fmt(totalSettledClaim)+'</div><div class="sc-sub">已赔付金额</div></div>';
-  h+='<div class="summary-card purple"><div class="sc-label">未决案件数</div><div class="sc-value">'+totalUnsettledCount+'</div><div class="sc-sub">待处理案件</div></div>';
-  h+='<div class="summary-card purple"><div class="sc-label">未决赔款</div><div class="sc-value">¥'+fmt(totalUnsettledClaim)+'</div><div class="sc-sub">待赔付金额</div></div>';
-  h+='<div class="summary-card red"><div class="sc-label">在保人数</div><div class="sc-value">'+totalInsured.toLocaleString()+'</div><div class="sc-sub">累计在保</div></div>';
-  cards.innerHTML=h;
+  h+='<div class="skpi-card"><div class="skpi-label">团单数量</div><div class="skpi-value">'+data.length+'<span class="skpi-unit">个</span></div></div>';
+  h+='<div class="skpi-card green"><div class="skpi-label">已决案件数</div><div class="skpi-value">'+totalSettledCount.toLocaleString()+'<span class="skpi-unit">件</span></div></div>';
+  h+='<div class="skpi-card orange"><div class="skpi-label">未决案件数</div><div class="skpi-value">'+totalUnsettledCount.toLocaleString()+'<span class="skpi-unit">件</span></div></div>';
+  h+='<div class="skpi-card cyan"><div class="skpi-label">已决赔款</div><div class="skpi-value">¥'+fmt(totalSettledClaim)+'</div></div>';
+  h+='<div class="skpi-card red"><div class="skpi-label">未决赔款</div><div class="skpi-value">¥'+fmt(totalUnsettledClaim)+'</div></div>';
+  box.innerHTML=h;
+}
+
+function renderSummaryCharts(data){
+  var byCompany={};
+  data.forEach(function(it){
+    var name=it.contractParty.replace('股份有限公司','').replace('有限','');
+    if(!byCompany[name])byCompany[name]={settledCount:0,unsettledCount:0,settledClaim:0,unsettledClaim:0,insured:0};
+    byCompany[name].settledCount+=it.medicalSettledCount;
+    byCompany[name].unsettledCount+=it.medicalUnsettledCount;
+    byCompany[name].settledClaim+=it.medicalSettledClaim;
+    byCompany[name].unsettledClaim+=it.medicalUnsettledClaim;
+    byCompany[name].insured+=it.insuredCount;
+  });
+  var names=Object.keys(byCompany);
+  var settledCounts=names.map(function(n){return byCompany[n].settledCount});
+  var unsettledCounts=names.map(function(n){return byCompany[n].unsettledCount});
+  var settledClaims=names.map(function(n){return byCompany[n].settledClaim});
+  var unsettledClaims=names.map(function(n){return byCompany[n].unsettledClaim});
+  var insureds=names.map(function(n){return byCompany[n].insured});
+
+  ensureChart('chartCases',function(c){
+    c.setOption({
+      tooltip:{trigger:'axis'},
+      legend:{data:['已决案件','未决案件'],bottom:0},
+      grid:{left:40,right:20,top:20,bottom:40},
+      xAxis:{type:'category',data:names,axisLabel:{fontSize:10,interval:0,rotate:15}},
+      yAxis:{type:'value',name:'件数',nameTextStyle:{fontSize:11}},
+      series:[
+        {name:'已决案件',type:'bar',data:settledCounts,itemStyle:{color:'#52c41a'}},
+        {name:'未决案件',type:'bar',data:unsettledCounts,itemStyle:{color:'#faad14'}}
+      ]
+    });
+  });
+
+  ensureChart('chartClaim',function(c){
+    c.setOption({
+      tooltip:{trigger:'axis',formatter:function(p){var s=p[0].name+'<br/>';p.forEach(function(it){s+=it.marker+it.seriesName+': ¥'+it.value.toLocaleString()+'<br/>'});return s}},
+      legend:{data:['已决赔款','未决赔款'],bottom:0},
+      grid:{left:60,right:20,top:20,bottom:40},
+      xAxis:{type:'category',data:names,axisLabel:{fontSize:10,interval:0,rotate:15}},
+      yAxis:{type:'value',name:'金额(元)',nameTextStyle:{fontSize:11},axisLabel:{formatter:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v}}},
+      series:[
+        {name:'已决赔款',type:'bar',stack:'total',data:settledClaims,itemStyle:{color:'#13c2c2'}},
+        {name:'未决赔款',type:'bar',stack:'total',data:unsettledClaims,itemStyle:{color:'#ff7875'}}
+      ]
+    });
+  });
+
+  ensureChart('chartInsured',function(c){
+    c.setOption({
+      tooltip:{trigger:'axis'},
+      grid:{left:60,right:20,top:20,bottom:40},
+      xAxis:{type:'category',data:names,axisLabel:{fontSize:10,interval:0,rotate:15}},
+      yAxis:{type:'value',name:'人数',nameTextStyle:{fontSize:11}},
+      series:[{type:'bar',data:insureds,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#667eea'},{offset:1,color:'#764ba2'}])},barWidth:40,label:{show:true,position:'top',fontSize:11}}]
+    });
+  });
+
+  var totalS=settledCounts.reduce(function(a,b){return a+b},0);
+  var totalU=unsettledCounts.reduce(function(a,b){return a+b},0);
+  ensureChart('chartStatus',function(c){
+    c.setOption({
+      tooltip:{trigger:'item',formatter:'{b}: {c} 件 ({d}%)'},
+      legend:{bottom:0},
+      series:[{
+        type:'pie',radius:['45%','70%'],
+        data:[
+          {name:'已决案件',value:totalS,itemStyle:{color:'#52c41a'}},
+          {name:'未决案件',value:totalU,itemStyle:{color:'#faad14'}}
+        ],
+        label:{formatter:'{b}\n{c}件 ({d}%)',fontSize:11}
+      }]
+    });
+  });
+}
+
+function ensureChart(id,optionFn){
+  var el=document.getElementById(id);
+  if(!el)return;
+  if(!chartInstances[id]){chartInstances[id]=echarts.init(el)}
+  optionFn(chartInstances[id]);
+}
+
+function resizeCharts(){
+  Object.values(chartInstances).forEach(function(c){c.resize()})
 }
 
 function goSummaryDetail(){
@@ -469,6 +569,7 @@ document.addEventListener('DOMContentLoaded',function(){
   renderDashboard(claimData);
   renderSummary(claimData);
   renderAlerts(claimData);
+  window.addEventListener('resize',resizeCharts);
 });
 </script>
 </body>
